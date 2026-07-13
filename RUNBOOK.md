@@ -29,11 +29,15 @@ PORT=8080 npm start
 ```
 
 ## Environment Variables
+See [.env.example](.env.example) for a copyable template.
+
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | 3000 | HTTP port to listen on |
 | `DROIDBOT_DB_PATH` | `./data/app.db` | Path to SQLite database file |
+| `DROIDBOT_UPLOADS_PATH` | `./data/uploads` | Directory for uploaded menu-item images |
 | `DROIDBOT_SESSION_SECRET` | dev fallback string | JWT signing secret — change in production! |
+| `DROIDBOT_COOKIE_SECURE` | unset | Set to `true` to mark the session cookie `Secure` (requires HTTPS) |
 
 ## Default Seeded Accounts
 | Email | Password | Role |

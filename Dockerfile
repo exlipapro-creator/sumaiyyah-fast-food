@@ -15,6 +15,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DROIDBOT_DB_PATH=/data/app.db
+ENV DROIDBOT_UPLOADS_PATH=/data/uploads
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json

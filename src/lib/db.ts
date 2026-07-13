@@ -76,6 +76,8 @@ function initSchema(db: Database.Database) {
       active INTEGER NOT NULL DEFAULT 1,
       deleted INTEGER NOT NULL DEFAULT 0,
       sort_order INTEGER NOT NULL DEFAULT 0,
+      track_stock INTEGER NOT NULL DEFAULT 0,
+      stock_qty INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -89,6 +91,10 @@ function initSchema(db: Database.Database) {
       discount_amount_tsh INTEGER NOT NULL DEFAULT 0,
       total_tsh INTEGER NOT NULL,
       payment_method TEXT NOT NULL CHECK(payment_method IN ('cash','mobile','card')),
+      status TEXT NOT NULL DEFAULT 'completed' CHECK(status IN ('completed','voided')),
+      voided_at TEXT,
+      voided_by INTEGER REFERENCES users(id),
+      void_reason TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
@@ -114,12 +120,46 @@ function initSchema(db: Database.Database) {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_supplier_paid_on ON supplier_payments(paid_on);
+
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id),
+      user_name TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id INTEGER,
+      details TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at);
   `);
 
-  // Migrate existing databases that predate the token_version column.
+  // Migrate existing databases that predate later columns/tables.
   const userCols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
   if (!userCols.some((c) => c.name === "token_version")) {
     db.exec("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0");
+  }
+
+  const menuItemCols = db.prepare("PRAGMA table_info(menu_items)").all() as { name: string }[];
+  if (!menuItemCols.some((c) => c.name === "track_stock")) {
+    db.exec("ALTER TABLE menu_items ADD COLUMN track_stock INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!menuItemCols.some((c) => c.name === "stock_qty")) {
+    db.exec("ALTER TABLE menu_items ADD COLUMN stock_qty INTEGER NOT NULL DEFAULT 0");
+  }
+
+  const orderCols = db.prepare("PRAGMA table_info(orders)").all() as { name: string }[];
+  if (!orderCols.some((c) => c.name === "status")) {
+    db.exec("ALTER TABLE orders ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'");
+  }
+  if (!orderCols.some((c) => c.name === "voided_at")) {
+    db.exec("ALTER TABLE orders ADD COLUMN voided_at TEXT");
+  }
+  if (!orderCols.some((c) => c.name === "voided_by")) {
+    db.exec("ALTER TABLE orders ADD COLUMN voided_by INTEGER REFERENCES users(id)");
+  }
+  if (!orderCols.some((c) => c.name === "void_reason")) {
+    db.exec("ALTER TABLE orders ADD COLUMN void_reason TEXT");
   }
 
   seed(db);

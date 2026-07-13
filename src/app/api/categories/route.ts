@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, AuthError } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import getDb from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole("manager", req);
+    const session = await requireRole("manager", req);
     const { name } = await req.json();
     if (!name || !name.trim()) {
       return NextResponse.json({ error: "Category name required" }, { status: 400 });
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
     const maxOrder = db.prepare("SELECT COALESCE(MAX(sort_order),0) as m FROM categories").get() as { m: number };
     const result = db.prepare("INSERT INTO categories (name, sort_order) VALUES (?, ?)").run(name.trim(), maxOrder.m + 1);
     const category = db.prepare("SELECT * FROM categories WHERE id = ?").get(result.lastInsertRowid);
+    logAudit(db, session, "create", "category", result.lastInsertRowid as number, { name: name.trim() });
     return NextResponse.json({ category }, { status: 201 });
   } catch (e) {
     if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });

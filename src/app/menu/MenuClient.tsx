@@ -18,6 +18,9 @@ interface MenuItem {
   category_name: string;
   active: number;
   deleted: number;
+  image_url: string | null;
+  track_stock: number;
+  stock_qty: number;
 }
 
 export default function MenuClient({
@@ -43,6 +46,10 @@ export default function MenuClient({
   const [itemCategory, setItemCategory] = useState("");
   const [itemPrice, setItemPrice] = useState("");
   const [itemActive, setItemActive] = useState(true);
+  const [itemTrackStock, setItemTrackStock] = useState(false);
+  const [itemStockQty, setItemStockQty] = useState("");
+  const [itemImageUrl, setItemImageUrl] = useState<string | null>(null);
+  const [itemUploading, setItemUploading] = useState(false);
   const [itemLoading, setItemLoading] = useState(false);
   const [itemError, setItemError] = useState("");
 
@@ -73,6 +80,9 @@ export default function MenuClient({
     setItemCategory(categories[0]?.id.toString() || "");
     setItemPrice("");
     setItemActive(true);
+    setItemTrackStock(false);
+    setItemStockQty("");
+    setItemImageUrl(null);
     setItemError("");
     setShowItemModal(true);
   }
@@ -83,8 +93,31 @@ export default function MenuClient({
     setItemCategory(item.category_id.toString());
     setItemPrice(item.price_tsh.toString());
     setItemActive(item.active === 1);
+    setItemTrackStock(item.track_stock === 1);
+    setItemStockQty(item.stock_qty?.toString() || "0");
+    setItemImageUrl(item.image_url);
     setItemError("");
     setShowItemModal(true);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setItemError("");
+    setItemUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/menu-items/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) { setItemError(data.error || "Upload failed"); return; }
+      setItemImageUrl(data.url);
+    } catch {
+      setItemError("Network error during upload");
+    } finally {
+      setItemUploading(false);
+    }
   }
 
   async function handleSaveItem() {
@@ -93,21 +126,32 @@ export default function MenuClient({
     const price = parseInt(itemPrice, 10);
     if (isNaN(price) || price < 0) { setItemError("Price must be a non-negative number"); return; }
     if (!itemCategory) { setItemError("Category is required"); return; }
+    const stockQty = parseInt(itemStockQty, 10) || 0;
+    if (itemTrackStock && (isNaN(stockQty) || stockQty < 0)) { setItemError("Stock quantity must be a non-negative number"); return; }
 
     setItemLoading(true);
     try {
+      const payload = {
+        name: itemName.trim(),
+        price_tsh: price,
+        category_id: parseInt(itemCategory),
+        active: itemActive,
+        track_stock: itemTrackStock,
+        stock_qty: stockQty,
+        image_url: itemImageUrl,
+      };
       let res, data;
       if (editItem) {
         res = await fetch(`/api/menu-items/${editItem.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: itemName.trim(), price_tsh: price, category_id: parseInt(itemCategory), active: itemActive }),
+          body: JSON.stringify(payload),
         });
       } else {
         res = await fetch("/api/menu-items", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: itemName.trim(), price_tsh: price, category_id: parseInt(itemCategory), active: itemActive }),
+          body: JSON.stringify(payload),
         });
       }
       data = await res.json();
@@ -204,6 +248,7 @@ export default function MenuClient({
                 <th className="text-left px-5 py-3 text-xs uppercase tracking-wide text-slate-400 font-semibold">Name</th>
                 <th className="text-left px-5 py-3 text-xs uppercase tracking-wide text-slate-400 font-semibold">Category</th>
                 <th className="text-right px-5 py-3 text-xs uppercase tracking-wide text-slate-400 font-semibold">Price</th>
+                <th className="text-right px-5 py-3 text-xs uppercase tracking-wide text-slate-400 font-semibold">Stock</th>
                 <th className="text-center px-5 py-3 text-xs uppercase tracking-wide text-slate-400 font-semibold">Status</th>
                 <th className="text-right px-5 py-3 text-xs uppercase tracking-wide text-slate-400 font-semibold">Actions</th>
               </tr>
@@ -211,14 +256,33 @@ export default function MenuClient({
             <tbody className="divide-y divide-slate-800">
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-slate-400">No items yet. Click &quot;Add Item&quot; to get started.</td>
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-400">No items yet. Click &quot;Add Item&quot; to get started.</td>
                 </tr>
               )}
               {items.map(item => (
                 <tr key={item.id} className="hover:bg-slate-800/60 transition-colors">
-                  <td className="px-5 py-3 text-slate-100 font-medium">{item.name}</td>
+                  <td className="px-5 py-3 text-slate-100 font-medium">
+                    <div className="flex items-center gap-2.5">
+                      {item.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.image_url} alt="" className="w-8 h-8 rounded object-cover border border-slate-700 flex-shrink-0" />
+                      ) : (
+                        <div className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-600 text-xs flex-shrink-0">🍽️</div>
+                      )}
+                      {item.name}
+                    </div>
+                  </td>
                   <td className="px-5 py-3 text-slate-400">{item.category_name}</td>
                   <td className="px-5 py-3 text-right text-amber-500 tabular-nums">{formatTSH(item.price_tsh)}</td>
+                  <td className="px-5 py-3 text-right tabular-nums">
+                    {item.track_stock ? (
+                      <span className={item.stock_qty === 0 ? "text-rose-400 font-semibold" : item.stock_qty <= 5 ? "text-amber-400" : "text-slate-300"}>
+                        {item.stock_qty}
+                      </span>
+                    ) : (
+                      <span className="text-slate-600">∞</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-center">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
                       item.active ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-700 text-slate-400"
@@ -336,6 +400,28 @@ export default function MenuClient({
                 placeholder="e.g. 8500"
               />
             </div>
+            <div>
+              <label className="block text-sm text-slate-300 mb-1">Photo</label>
+              <div className="flex items-center gap-3">
+                {itemImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={itemImageUrl} alt="" className="w-14 h-14 rounded-lg object-cover border border-slate-700" />
+                ) : (
+                  <div className="w-14 h-14 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-600 text-xl">🍽️</div>
+                )}
+                <label className="flex-1 cursor-pointer bg-slate-800 text-slate-100 border border-slate-700 rounded-lg py-2 text-sm text-center hover:bg-slate-700 transition-colors">
+                  {itemUploading ? "Uploading..." : itemImageUrl ? "Change Photo" : "Upload Photo"}
+                  <input
+                    data-testid="item-image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleImageUpload}
+                    disabled={itemUploading}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
             <div className="flex items-center gap-3">
               <input
                 data-testid="item-active"
@@ -347,6 +433,31 @@ export default function MenuClient({
               />
               <label htmlFor="item-active" className="text-sm text-slate-300">Active (visible on POS)</label>
             </div>
+            <div className="flex items-center gap-3">
+              <input
+                data-testid="item-track-stock"
+                type="checkbox"
+                id="item-track-stock"
+                checked={itemTrackStock}
+                onChange={e => setItemTrackStock(e.target.checked)}
+                className="w-4 h-4 accent-amber-500"
+              />
+              <label htmlFor="item-track-stock" className="text-sm text-slate-300">Track stock</label>
+            </div>
+            {itemTrackStock && (
+              <div>
+                <label className="block text-sm text-slate-300 mb-1">Stock Quantity</label>
+                <input
+                  data-testid="item-stock-qty"
+                  type="number"
+                  min="0"
+                  value={itemStockQty}
+                  onChange={e => setItemStockQty(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                  placeholder="e.g. 20"
+                />
+              </div>
+            )}
             {itemError && (
               <div data-testid="item-error" className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
                 {itemError}
@@ -362,7 +473,7 @@ export default function MenuClient({
               <button
                 data-testid="item-save"
                 onClick={handleSaveItem}
-                disabled={itemLoading}
+                disabled={itemLoading || itemUploading}
                 className="flex-1 bg-amber-500 text-slate-950 font-semibold rounded-lg py-2 hover:bg-amber-400 disabled:opacity-60 transition-colors"
               >
                 {itemLoading ? "Saving..." : editItem ? "Update Item" : "Add Item"}

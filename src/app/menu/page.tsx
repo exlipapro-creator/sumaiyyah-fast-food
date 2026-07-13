@@ -24,6 +24,7 @@ export default async function MenuPage() {
   `).all() as {
     id: number; name: string; price_tsh: number; category_id: number;
     category_name: string; active: number; deleted: number;
+    image_url: string | null; track_stock: number; stock_qty: number;
   }[];
 
   return (

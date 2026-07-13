@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Start server
+        run: |
+          DROIDBOT_DB_PATH=./data/ci.db \
+          DROIDBOT_SESSION_SECRET=$(node -e "console.log(require('crypto').randomBytes(48).toString('hex'))") \
+          PORT=3001 \
+          nohup npm start > server.log 2>&1 &
+          npx wait-on -t 30000 http://localhost:3001/api/auth/me
+
+      - name: Run tests
+        run: DROIDBOT_TEST_URL=http://localhost:3001 npm test
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat server.log || true

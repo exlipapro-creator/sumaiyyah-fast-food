@@ -3,8 +3,8 @@ import { getSessionFromRequest } from "./src/lib/auth-edge";
 
 // Public, unauthenticated surfaces: the staff login + the customer-facing
 // landing/ordering page and its read-only live-menu API.
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/order", "/api/public"];
-const MANAGER_ONLY_PATHS = ["/menu", "/reports", "/suppliers", "/users", "/api/users", "/api/menu-items", "/api/categories", "/api/reports/sales", "/api/reports/best-sellers", "/api/reports/sales.csv", "/api/supplier-payments"];
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/order", "/api/public", "/api/uploads"];
+const MANAGER_ONLY_PATHS = ["/menu", "/reports", "/suppliers", "/users", "/audit", "/api/users", "/api/menu-items", "/api/categories", "/api/reports/sales", "/api/reports/best-sellers", "/api/reports/sales.csv", "/api/supplier-payments", "/api/audit-log"];
 // Read-only endpoints that cashiers legitimately need (e.g. loading the menu in
 // the POS screen). For these prefixes we only enforce the manager requirement on
 // mutating methods; safe GET/HEAD requests are allowed for any authenticated

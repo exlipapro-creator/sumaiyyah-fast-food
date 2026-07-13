@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
              SUM(oi.quantity) as qty, SUM(oi.line_total_tsh) as revenue
       FROM order_items oi
       JOIN orders o ON oi.order_id = o.id
-      WHERE date(o.created_at) BETWEEN ? AND ?
+      WHERE date(o.created_at) BETWEEN ? AND ? AND o.status = 'completed'
       GROUP BY oi.menu_item_id, oi.name_snapshot
       ORDER BY qty DESC
       LIMIT 10
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
              SUM(oi.quantity) as qty, SUM(oi.line_total_tsh) as revenue
       FROM order_items oi
       JOIN orders o ON oi.order_id = o.id
-      WHERE date(o.created_at) BETWEEN ? AND ?
+      WHERE date(o.created_at) BETWEEN ? AND ? AND o.status = 'completed'
       GROUP BY oi.menu_item_id, oi.name_snapshot
       ORDER BY revenue DESC
       LIMIT 10

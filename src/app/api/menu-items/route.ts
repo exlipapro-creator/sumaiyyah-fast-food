@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, AuthError } from "@/lib/auth";
 import { sanitizeImageUrl } from "@/lib/validation";
+import { logAudit } from "@/lib/audit";
 import getDb from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +25,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole("manager", req);
-    const { name, category_id, price_tsh, image_url, active } = await req.json();
+    const session = await requireRole("manager", req);
+    const { name, category_id, price_tsh, image_url, active, track_stock, stock_qty } = await req.json();
     if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json({ error: "Item name required" }, { status: 400 });
     }
@@ -37,6 +38,14 @@ export async function POST(req: NextRequest) {
     if (!Number.isInteger(catId) || catId < 1) {
       return NextResponse.json({ error: "Category required" }, { status: 400 });
     }
+    const trackStock = track_stock ? 1 : 0;
+    let stockQty = 0;
+    if (trackStock) {
+      stockQty = Number(stock_qty);
+      if (!Number.isInteger(stockQty) || stockQty < 0) {
+        return NextResponse.json({ error: "Stock quantity must be a non-negative integer" }, { status: 400 });
+      }
+    }
     const db = getDb();
     const cat = db.prepare("SELECT id FROM categories WHERE id = ?").get(catId);
     if (!cat) {
@@ -44,9 +53,10 @@ export async function POST(req: NextRequest) {
     }
     const maxOrder = db.prepare("SELECT COALESCE(MAX(sort_order),0) as m FROM menu_items WHERE category_id = ?").get(catId) as { m: number };
     const result = db.prepare(
-      "INSERT INTO menu_items (category_id, name, price_tsh, image_url, active, sort_order) VALUES (?, ?, ?, ?, ?, ?)"
-    ).run(catId, name.trim(), price, sanitizeImageUrl(image_url), active !== false ? 1 : 0, maxOrder.m + 1);
+      "INSERT INTO menu_items (category_id, name, price_tsh, image_url, active, sort_order, track_stock, stock_qty) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(catId, name.trim(), price, sanitizeImageUrl(image_url), active !== false ? 1 : 0, maxOrder.m + 1, trackStock, stockQty);
     const item = db.prepare("SELECT mi.*, c.name as category_name FROM menu_items mi JOIN categories c ON mi.category_id = c.id WHERE mi.id = ?").get(result.lastInsertRowid);
+    logAudit(db, session, "create", "menu_item", result.lastInsertRowid as number, { name: name.trim(), price_tsh: price });
     return NextResponse.json({ item }, { status: 201 });
   } catch (e) {
     if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });

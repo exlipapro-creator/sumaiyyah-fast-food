@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, AuthError } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import getDb from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
       "INSERT INTO supplier_payments (supplier_name, amount_tsh, paid_on, category, notes, created_by) VALUES (?, ?, ?, ?, ?, ?)"
     ).run(supplier_name.trim(), amount, paid_on, category, notes || null, session.id);
     const payment = db.prepare("SELECT * FROM supplier_payments WHERE id = ?").get(result.lastInsertRowid);
+    logAudit(db, session, "create", "supplier_payment", result.lastInsertRowid as number, { supplier_name: supplier_name.trim(), amount_tsh: amount });
     return NextResponse.json({ payment }, { status: 201 });
   } catch (e) {
     if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });

@@ -20,6 +20,7 @@ export default async function POSPage() {
   `).all() as {
     id: number; name: string; price_tsh: number; category_id: number;
     category_name: string; image_url: string | null; active: number;
+    track_stock: number; stock_qty: number;
   }[];
 
   const categories = db.prepare("SELECT * FROM categories ORDER BY sort_order ASC, id ASC").all() as {

@@ -12,10 +12,12 @@ interface AppShellProps {
 const navItems = [
   { href: "/", label: "Dashboard", testId: "nav-dashboard", icon: "📊" },
   { href: "/pos", label: "POS", testId: "nav-pos", icon: "🛒" },
+  { href: "/orders", label: "Orders", testId: "nav-orders", icon: "🧾" },
   { href: "/menu", label: "Menu", testId: "nav-menu", icon: "🍔", managerOnly: true },
   { href: "/reports", label: "Reports", testId: "nav-reports", icon: "📈", managerOnly: true },
   { href: "/suppliers", label: "Suppliers", testId: "nav-suppliers", icon: "🏪", managerOnly: true },
   { href: "/users", label: "Users", testId: "nav-users", icon: "👥", managerOnly: true },
+  { href: "/audit", label: "Audit Log", testId: "nav-audit", icon: "🗒️", managerOnly: true },
 ];
 
 export default function AppShell({ children, user }: AppShellProps) {

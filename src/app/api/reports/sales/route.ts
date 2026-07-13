@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
              COALESCE(SUM(oi_total.qty), 0) as totalPlates
       FROM orders o
       LEFT JOIN (SELECT order_id, SUM(quantity) as qty FROM order_items GROUP BY order_id) oi_total ON oi_total.order_id = o.id
-      WHERE date(o.created_at) BETWEEN ? AND ?
+      WHERE date(o.created_at) BETWEEN ? AND ? AND o.status = 'completed'
     `).get(from, to);
 
     const perItem = db.prepare(`
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
              SUM(oi.quantity) as qty, SUM(oi.line_total_tsh) as revenue
       FROM order_items oi
       JOIN orders o ON oi.order_id = o.id
-      WHERE date(o.created_at) BETWEEN ? AND ?
+      WHERE date(o.created_at) BETWEEN ? AND ? AND o.status = 'completed'
       GROUP BY oi.menu_item_id, oi.name_snapshot
       ORDER BY revenue DESC
     `).all(from, to);

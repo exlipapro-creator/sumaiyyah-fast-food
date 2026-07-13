@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, hashPassword, AuthError } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import getDb from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole("manager", req);
+    const session = await requireRole("manager", req);
     const { email, name, password, role } = await req.json();
     if (!email || !name || !password || !role) {
       return NextResponse.json({ error: "All fields required" }, { status: 400 });
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
       "INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)"
     ).run(email.toLowerCase(), name, hash, role);
     const user = db.prepare("SELECT id, email, name, role, active, created_at FROM users WHERE id = ?").get(result.lastInsertRowid);
+    logAudit(db, session, "create", "user", result.lastInsertRowid as number, { email: email.toLowerCase(), role });
     return NextResponse.json({ user }, { status: 201 });
   } catch (e) {
     if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });

@@ -178,6 +178,10 @@ export default function OrderClient({
   }
 
   function addItem(item: PublicMenuItem) {
+    if (!item.in_stock) {
+      showToast(`😔 ${item.name} is sold out`);
+      return;
+    }
     setCart((prev) => {
       const cur = prev[item.id];
       return { ...prev, [item.id]: { item, qty: (cur?.qty ?? 0) + 1 } };
@@ -570,7 +574,12 @@ export default function OrderClient({
                   onKeyDown={(e) => { if (e.key === "Enter") setDetailItem(item); }}
                 >
                   <div className="sff-thumb" aria-hidden="true">
-                    {m.emoji}
+                    {item.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+                    ) : (
+                      m.emoji
+                    )}
                     {m.badges[0] && (
                       <span
                         className={`sff-badge-chip badge-${m.badges[0].kind}`}
@@ -587,12 +596,18 @@ export default function OrderClient({
                       <span className="sff-rating" data-testid={`landing-rating-${item.id}`}>★ {m.rating.toFixed(1)}</span>
                       <span className="sff-dot" aria-hidden="true">·</span>
                       <span className="sff-prep" data-testid={`landing-prep-${item.id}`}>{m.prepMin} min</span>
-                      <span
-                        className={`sff-avail ${AVAIL_CLASS[m.availability]}`}
-                        data-testid={`landing-availability-${item.id}`}
-                      >
-                        {m.availability}
-                      </span>
+                      {item.in_stock ? (
+                        <span
+                          className={`sff-avail ${AVAIL_CLASS[m.availability]}`}
+                          data-testid={`landing-availability-${item.id}`}
+                        >
+                          {m.availability}
+                        </span>
+                      ) : (
+                        <span className="sff-avail avail-soldout" data-testid={`landing-availability-${item.id}`}>
+                          Sold Out
+                        </span>
+                      )}
                     </div>
                     <div className="sff-card-foot">
                       <span className="sff-price" data-testid={`landing-price-${item.id}`}>
@@ -609,6 +624,7 @@ export default function OrderClient({
                           className={`sff-add ${poppedId === item.id ? "added" : ""}`}
                           data-testid={`landing-add-${item.id}`}
                           aria-label={`Add ${item.name}`}
+                          disabled={!item.in_stock}
                           onClick={(e) => { e.stopPropagation(); addItem(item); }}
                         >
                           +
@@ -640,7 +656,7 @@ export default function OrderClient({
                     <div className="sff-special-name">{item.name}</div>
                     <div className="sff-special-foot">
                       <span className="sff-price">{formatTSH(item.price_tsh)}</span>
-                      <button className="sff-add sm" aria-label={`Add ${item.name}`} onClick={() => addItem(item)}>+</button>
+                      <button className="sff-add sm" aria-label={`Add ${item.name}`} disabled={!item.in_stock} onClick={() => addItem(item)}>+</button>
                     </div>
                   </article>
                 );
@@ -800,7 +816,11 @@ export default function OrderClient({
                 {m.badges.map((b) => (
                   <span key={b.label} className={`sff-badge-chip badge-${b.kind}`}>{b.label}</span>
                 ))}
-                <span className={`sff-avail ${AVAIL_CLASS[m.availability]}`}>{m.availability}</span>
+                {detailItem.in_stock ? (
+                  <span className={`sff-avail ${AVAIL_CLASS[m.availability]}`}>{m.availability}</span>
+                ) : (
+                  <span className="sff-avail avail-soldout">Sold Out</span>
+                )}
               </div>
               <p className="sff-detail-desc">{m.description}</p>
               <div className="sff-detail-stats">
@@ -846,9 +866,10 @@ export default function OrderClient({
               <button
                 className="sff-btn-order"
                 data-testid="landing-detail-add"
+                disabled={!detailItem.in_stock}
                 onClick={() => { addItem(detailItem); setDetailItem(null); }}
               >
-                Add to order · {formatTSH(detailItem.price_tsh)}
+                {detailItem.in_stock ? `Add to order · ${formatTSH(detailItem.price_tsh)}` : "Sold Out"}
               </button>
             </div>
           </div>

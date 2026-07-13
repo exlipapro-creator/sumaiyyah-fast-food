@@ -12,15 +12,15 @@ export async function GET(req: NextRequest) {
     const yearMonth = new Date().toISOString().slice(0, 7);
 
     const revenueToday = (db.prepare(
-      "SELECT COALESCE(SUM(total_tsh), 0) as v FROM orders WHERE date(created_at) = ?"
+      "SELECT COALESCE(SUM(total_tsh), 0) as v FROM orders WHERE date(created_at) = ? AND status = 'completed'"
     ).get(today) as { v: number }).v;
 
     const platesToday = (db.prepare(
-      "SELECT COALESCE(SUM(oi.quantity), 0) as v FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE date(o.created_at) = ?"
+      "SELECT COALESCE(SUM(oi.quantity), 0) as v FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE date(o.created_at) = ? AND o.status = 'completed'"
     ).get(today) as { v: number }).v;
 
     const transactionsToday = (db.prepare(
-      "SELECT COUNT(*) as v FROM orders WHERE date(created_at) = ?"
+      "SELECT COUNT(*) as v FROM orders WHERE date(created_at) = ? AND status = 'completed'"
     ).get(today) as { v: number }).v;
 
     const supplierMonth = (db.prepare(

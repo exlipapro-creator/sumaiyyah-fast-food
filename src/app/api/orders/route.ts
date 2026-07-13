@@ -4,6 +4,12 @@ import getDb from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+class InsufficientStockError extends Error {
+  constructor(public itemName: string) {
+    super(`Not enough stock for "${itemName}"`);
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await requireRole("any", req);
@@ -11,13 +17,15 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
+    const status = url.searchParams.get("status");
     let query = "SELECT o.*, u.name as cashier_name FROM orders o JOIN users u ON o.cashier_id = u.id WHERE 1=1";
     const params: (string | number)[] = [];
     // Non-managers may only see their own orders (prevents IDOR across cashiers).
     if (session.role !== "manager") { query += " AND o.cashier_id = ?"; params.push(session.id); }
     if (from) { query += " AND date(o.created_at) >= ?"; params.push(from); }
     if (to) { query += " AND date(o.created_at) <= ?"; params.push(to); }
-    query += " ORDER BY o.created_at DESC";
+    if (status && ["completed", "voided"].includes(status)) { query += " AND o.status = ?"; params.push(status); }
+    query += " ORDER BY o.created_at DESC LIMIT 200";
     const orders = db.prepare(query).all(...params);
     return NextResponse.json({ orders });
   } catch (e) {
@@ -53,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     // Compute subtotal from authoritative prices
     let subtotal = 0;
-    const lineItems: { menu_item_id: number; name_snapshot: string; unit_price_tsh: number; quantity: number; line_total_tsh: number }[] = [];
+    const lineItems: { menu_item_id: number; name_snapshot: string; unit_price_tsh: number; quantity: number; line_total_tsh: number; trackStock: boolean }[] = [];
 
     for (const item of items) {
       if (!item || typeof item !== "object") {
@@ -67,9 +75,17 @@ export async function POST(req: NextRequest) {
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
         return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
       }
-      const menuItem = db.prepare("SELECT * FROM menu_items WHERE id = ? AND active = 1 AND deleted = 0").get(menuItemId) as { id: number; name: string; price_tsh: number } | undefined;
+      const menuItem = db.prepare("SELECT * FROM menu_items WHERE id = ? AND active = 1 AND deleted = 0").get(menuItemId) as
+        | { id: number; name: string; price_tsh: number; track_stock: number; stock_qty: number }
+        | undefined;
       if (!menuItem) {
         return NextResponse.json({ error: `Item ${menuItemId} not available` }, { status: 400 });
+      }
+      if (menuItem.track_stock && menuItem.stock_qty < quantity) {
+        return NextResponse.json(
+          { error: `Only ${menuItem.stock_qty} left of "${menuItem.name}"` },
+          { status: 400 }
+        );
       }
       const lineTotal = menuItem.price_tsh * quantity;
       subtotal += lineTotal;
@@ -79,6 +95,7 @@ export async function POST(req: NextRequest) {
         unit_price_tsh: menuItem.price_tsh,
         quantity: quantity,
         line_total_tsh: lineTotal,
+        trackStock: !!menuItem.track_stock,
       });
     }
 
@@ -118,6 +135,18 @@ export async function POST(req: NextRequest) {
           INSERT INTO order_items (order_id, menu_item_id, name_snapshot, unit_price_tsh, quantity, line_total_tsh)
           VALUES (?, ?, ?, ?, ?, ?)
         `).run(orderId, li.menu_item_id, li.name_snapshot, li.unit_price_tsh, li.quantity, li.line_total_tsh);
+
+        // Conditional decrement: only commits if enough stock remains at the
+        // moment of the write, re-checked here (not just in the earlier
+        // validation pass) so a concurrent order can't oversell the last units.
+        if (li.trackStock) {
+          const stockUpdate = db.prepare(
+            "UPDATE menu_items SET stock_qty = stock_qty - ? WHERE id = ? AND stock_qty >= ?"
+          ).run(li.quantity, li.menu_item_id, li.quantity);
+          if (stockUpdate.changes === 0) {
+            throw new InsufficientStockError(li.name_snapshot);
+          }
+        }
       }
 
       return { orderId, receipt_no };
@@ -129,6 +158,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ order, items: orderItems, receipt: { receipt_no: result.receipt_no } }, { status: 201 });
   } catch (e) {
     if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+    if (e instanceof InsufficientStockError) return NextResponse.json({ error: e.message }, { status: 400 });
     console.error(e);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

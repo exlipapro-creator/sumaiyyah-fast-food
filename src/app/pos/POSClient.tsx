@@ -10,6 +10,8 @@ interface MenuItem {
   category_id: number;
   category_name: string;
   image_url: string | null;
+  track_stock: number;
+  stock_qty: number;
 }
 
 interface CartItem {
@@ -53,7 +55,19 @@ export default function POSClient({
     ? items.filter(i => i.category_id === selectedCategory)
     : items;
 
+  function stockRemaining(item: MenuItem): number | null {
+    if (!item.track_stock) return null;
+    const inCart = cart.find(c => c.item.id === item.id)?.quantity ?? 0;
+    return item.stock_qty - inCart;
+  }
+
+  function isSoldOut(item: MenuItem): boolean {
+    const remaining = stockRemaining(item);
+    return remaining !== null && remaining <= 0;
+  }
+
   function addToCart(item: MenuItem) {
+    if (isSoldOut(item)) return;
     setCart(prev => {
       const existing = prev.find(c => c.item.id === item.id);
       if (existing) {
@@ -64,7 +78,11 @@ export default function POSClient({
   }
 
   function incQty(itemId: number) {
-    setCart(prev => prev.map(c => c.item.id === itemId ? { ...c, quantity: c.quantity + 1 } : c));
+    setCart(prev => prev.map(c => {
+      if (c.item.id !== itemId) return c;
+      if (c.item.track_stock && c.quantity >= c.item.stock_qty) return c;
+      return { ...c, quantity: c.quantity + 1 };
+    }));
   }
 
   function decQty(itemId: number) {
@@ -246,25 +264,42 @@ export default function POSClient({
         <div data-testid="pos-grid" className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
           {filteredItems.map(item => {
             const cartItem = cart.find(c => c.item.id === item.id);
+            const remaining = stockRemaining(item);
+            const soldOut = isSoldOut(item);
             return (
               <button
                 key={item.id}
                 data-testid={`pos-item-${item.id}`}
                 onClick={() => addToCart(item)}
-                className="relative bg-slate-900 border border-slate-800 rounded-xl p-4 min-h-24 text-left hover:border-amber-500/50 hover:bg-slate-800 transition-all group"
+                disabled={soldOut}
+                className={`relative bg-slate-900 border border-slate-800 rounded-xl p-4 min-h-24 text-left transition-all group ${
+                  soldOut
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:border-amber-500/50 hover:bg-slate-800"
+                }`}
               >
                 {cartItem && (
                   <span className="absolute top-2 right-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {cartItem.quantity}
                   </span>
                 )}
-                <div className="text-2xl mb-2">🍔</div>
+                {item.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover mb-2" />
+                ) : (
+                  <div className="text-2xl mb-2">🍔</div>
+                )}
                 <div className="text-base font-semibold text-slate-100 group-hover:text-amber-400 transition-colors leading-tight">
                   {item.name}
                 </div>
                 <div className="text-amber-500 text-sm font-semibold mt-1 tabular-nums">
                   {formatTSH(item.price_tsh)}
                 </div>
+                {remaining !== null && (
+                  <div data-testid={`pos-item-stock-${item.id}`} className={`text-xs mt-1 font-medium ${soldOut ? "text-rose-400" : remaining <= 5 ? "text-amber-400" : "text-slate-500"}`}>
+                    {soldOut ? "Sold out" : `${remaining} left`}
+                  </div>
+                )}
               </button>
             );
           })}

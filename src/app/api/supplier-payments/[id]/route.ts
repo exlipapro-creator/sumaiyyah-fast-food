@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, AuthError } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import getDb from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireRole("manager", req);
+    const session = await requireRole("manager", req);
     const { id } = await params;
     const numId = Number(id);
     if (!Number.isInteger(numId) || numId < 1) {
@@ -47,6 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (fields.length > 0) {
       values.push(numId);
       db.prepare(`UPDATE supplier_payments SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+      logAudit(db, session, "update", "supplier_payment", numId, Object.fromEntries(fields.map((f, i) => [f.split(" ")[0], values[i]])));
     }
     const payment = db.prepare("SELECT * FROM supplier_payments WHERE id = ?").get(numId);
     return NextResponse.json({ payment });
@@ -58,14 +60,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireRole("manager", req);
+    const session = await requireRole("manager", req);
     const { id } = await params;
     const numId = Number(id);
     if (!Number.isInteger(numId) || numId < 1) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
     const db = getDb();
+    const existing = db.prepare("SELECT supplier_name FROM supplier_payments WHERE id = ?").get(numId) as { supplier_name: string } | undefined;
     db.prepare("DELETE FROM supplier_payments WHERE id = ?").run(numId);
+    if (existing) logAudit(db, session, "delete", "supplier_payment", numId, { supplier_name: existing.supplier_name });
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
