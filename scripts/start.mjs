@@ -16,9 +16,10 @@ if (!process.env[KEY] || process.env[KEY].length < 16) {
   );
 }
 
+const port = process.env.PORT || "3000";
 const child = spawn(
   process.execPath,
-  ["node_modules/next/dist/bin/next", "start"],
+  ["node_modules/next/dist/bin/next", "start", "-p", port, "-H", "0.0.0.0"],
   { stdio: "inherit", env: process.env }
 );
 child.on("exit", (code) => process.exit(code ?? 0));

@@ -499,6 +499,10 @@ function initSchema(db: Database.Database) {
   seedCorporateData(db);
 }
 
+function isProduction(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
 function seedSettingsAndPromos(db: Database.Database) {
   const settingsCount = db.prepare("SELECT COUNT(*) as n FROM restaurant_settings").get() as { n: number };
   if (settingsCount.n === 0) {
@@ -506,6 +510,11 @@ function seedSettingsAndPromos(db: Database.Database) {
       INSERT INTO restaurant_settings (id, name, tagline, phone, whatsapp, address, opening_hours, delivery_enabled, delivery_fee_tsh, min_order_tsh)
       VALUES (1, 'Sumaiyyah Fast Food', 'Authentic Swahili Street Food, Hot & Fresh', '+255 700 000 000', '255700000000', 'Kariakoo, Dar es Salaam, Tanzania', 'Mon–Sun: 8:00 AM – 11:00 PM', 1, 2500, 5000)
     `).run();
+  }
+
+  // In production, promotions are managed exclusively by authorized managers; do not auto-seed demo vouchers.
+  if (isProduction()) {
+    return;
   }
 
   const promoCount = db.prepare("SELECT COUNT(*) as n FROM promotions").get() as { n: number };
@@ -793,19 +802,9 @@ function enrichMenuItems(db: Database.Database) {
   }
 }
 
-function seed(db: Database.Database) {
-  const existing = db.prepare("SELECT COUNT(*) as n FROM users").get() as { n: number };
-  if (existing.n > 0) return;
-
-  const managerHash = bcrypt.hashSync("Manager123!", 10);
-  const cashierHash = bcrypt.hashSync("Cashier123!", 10);
-
-  db.prepare(`INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)`).run(
-    "manager@sumaiyyah.test", "Admin Manager", managerHash, "manager"
-  );
-  db.prepare(`INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)`).run(
-    "cashier@sumaiyyah.test", "Default Cashier", cashierHash, "cashier"
-  );
+function seedMenuCategoriesAndItems(db: Database.Database) {
+  const existingCats = db.prepare("SELECT COUNT(*) as n FROM categories").get() as { n: number };
+  if (existingCats.n > 0) return;
 
   const cats = [
     { name: "Burgers", sort_order: 1 },
@@ -840,136 +839,182 @@ function seed(db: Database.Database) {
   }
 }
 
-function seedCorporateData(db: Database.Database) {
-  // Seed Corporate Accounts if none exist
-  const accountsCount = db.prepare("SELECT COUNT(*) as n FROM corporate_accounts").get() as { n: number };
-  if (accountsCount.n === 0) {
-    const acc1 = db.prepare(`
-      INSERT INTO corporate_accounts (company_name, legal_name, account_code, billing_email, billing_phone, tax_id, payment_terms, credit_limit_tsh, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
-    `).run(
-      "Vodacom Tanzania PLC",
-      "Vodacom Tanzania Public Limited Company",
-      "VODA-HQ",
-      "procurement@vodacom.co.tz",
-      "+255 754 000 111",
-      "100-245-890",
-      "NET_30",
-      5000000,
-      "Key enterprise account. Regular Friday team lunches & executive meetings."
-    );
-    const acc1Id = acc1.lastInsertRowid as number;
+function seed(db: Database.Database) {
+  const existing = db.prepare("SELECT COUNT(*) as n FROM users").get() as { n: number };
+  if (existing.n === 0) {
+    if (isProduction()) {
+      // Production mode: never create known test accounts.
+      // Use environment variables for secure initial manager bootstrap.
+      const initEmail = process.env.INITIAL_MANAGER_EMAIL?.trim();
+      const initPassword = process.env.INITIAL_MANAGER_PASSWORD;
+      const initName = process.env.INITIAL_MANAGER_NAME?.trim() || "Operations Manager";
 
-    db.prepare(`
-      INSERT INTO corporate_locations (corporate_account_id, label, area, building_name, address, floor, office_number, delivery_instructions)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      acc1Id,
-      "Vodacom Tower (Headquarters)",
-      "Mlimani / Ubungo",
-      "Vodacom Tower",
-      "Sam Nujoma Rd, Dar es Salaam",
-      "7th Floor",
-      "Executive & Tech Hub",
-      "Check in at Gate 2 security. Security will phone receptionist on 7th floor."
-    );
+      if (initEmail && initPassword && initPassword.length >= 8) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(initEmail)) {
+          const managerHash = bcrypt.hashSync(initPassword, 10);
+          db.prepare(
+            `INSERT INTO users (email, name, password_hash, role, active) VALUES (?, ?, ?, 'manager', 1)`
+          ).run(initEmail, initName, managerHash);
+          console.log(`[bootstrap] Initial production manager account provisioned for ${initEmail}`);
+        } else {
+          console.warn(`[bootstrap] INITIAL_MANAGER_EMAIL is not a valid email address.`);
+        }
+      } else {
+        console.warn(
+          `[bootstrap] Production database initialized with 0 users. Provide INITIAL_MANAGER_EMAIL and INITIAL_MANAGER_PASSWORD (min 8 characters) to provision the initial manager.`
+        );
+      }
+    } else {
+      // Development & Automated Test mode: seed standard dev accounts
+      const managerHash = bcrypt.hashSync("Manager123!", 10);
+      const cashierHash = bcrypt.hashSync("Cashier123!", 10);
 
-    db.prepare(`
-      INSERT INTO corporate_locations (corporate_account_id, label, area, building_name, address, floor, office_number, delivery_instructions)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      acc1Id,
-      "Vodacom Innovation Lab",
-      "Masaki / Oysterbay",
-      "Peninsula Plaza",
-      "Toure Drive, Masaki",
-      "3rd Floor",
-      "Innovation Suite 302",
-      "Drop off at 3rd Floor tech hub entrance."
-    );
-
-    db.prepare(`
-      INSERT INTO corporate_contacts (corporate_account_id, full_name, email, phone, role, is_primary)
-      VALUES (?, ?, ?, ?, 'administrator', 1)
-    `).run(acc1Id, "Amina Juma", "amina.j@vodacom.co.tz", "+255 754 112 233");
-
-    db.prepare(`
-      INSERT INTO corporate_contacts (corporate_account_id, full_name, email, phone, role, is_primary)
-      VALUES (?, ?, ?, ?, 'order_contact', 0)
-    `).run(acc1Id, "David Mwakipesile", "david.m@vodacom.co.tz", "+255 754 445 566");
-
-    const acc2 = db.prepare(`
-      INSERT INTO corporate_accounts (company_name, legal_name, account_code, billing_email, billing_phone, tax_id, payment_terms, credit_limit_tsh, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
-    `).run(
-      "CRDB Bank Towers",
-      "CRDB Bank PLC",
-      "CRDB-HQ",
-      "admin.meals@crdbbank.co.tz",
-      "+255 713 000 222",
-      "102-554-321",
-      "NET_14",
-      3500000,
-      "Corporate branch lunch supplier. Board meetings and staff training events."
-    );
-    const acc2Id = acc2.lastInsertRowid as number;
-
-    db.prepare(`
-      INSERT INTO corporate_locations (corporate_account_id, label, area, building_name, address, floor, office_number, delivery_instructions)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      acc2Id,
-      "CRDB Head Office Tower",
-      "Posta / CBD",
-      "CRDB HQ Tower",
-      "Azikiwe Street, Posta",
-      "12th Floor",
-      "Executive Boardroom Suite",
-      "Deliver through Posta entrance cargo lift, security badge required."
-    );
-
-    db.prepare(`
-      INSERT INTO corporate_contacts (corporate_account_id, full_name, email, phone, role, is_primary)
-      VALUES (?, ?, ?, ?, 'order_contact', 1)
-    `).run(acc2Id, "Baraka Mwangi", "baraka.m@crdbbank.co.tz", "+255 713 998 877");
-
-    const acc3 = db.prepare(`
-      INSERT INTO corporate_accounts (company_name, legal_name, account_code, billing_email, billing_phone, tax_id, payment_terms, credit_limit_tsh, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
-    `).run(
-      "Swahili Tech Labs",
-      "Swahili Tech Labs Ltd",
-      "SW-TECH",
-      "ops@swahilitech.co.tz",
-      "+255 784 555 666",
-      "119-998-223",
-      "DUE_ON_DELIVERY",
-      1500000,
-      "Startup studio. Bi-weekly demo day catering."
-    );
-    const acc3Id = acc3.lastInsertRowid as number;
-
-    db.prepare(`
-      INSERT INTO corporate_locations (corporate_account_id, label, area, building_name, address, floor, office_number, delivery_instructions)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      acc3Id,
-      "Tech Hub Studio",
-      "Mikocheni",
-      "Silicon Dar Building",
-      "Old Bagamoyo Rd, Mikocheni",
-      "2nd Floor",
-      "Suite 204",
-      "Ring bell at reception."
-    );
-
-    db.prepare(`
-      INSERT INTO corporate_contacts (corporate_account_id, full_name, email, phone, role, is_primary)
-      VALUES (?, ?, ?, ?, 'administrator', 1)
-    `).run(acc3Id, "Zuhura Salum", "zuhura@swahilitech.co.tz", "+255 784 555 666");
+      db.prepare(`INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)`).run(
+        "manager@sumaiyyah.test", "Admin Manager", managerHash, "manager"
+      );
+      db.prepare(`INSERT INTO users (email, name, password_hash, role) VALUES (?, ?, ?, ?)`).run(
+        "cashier@sumaiyyah.test", "Default Cashier", cashierHash, "cashier"
+      );
+    }
   }
 
-  // Seed Corporate Menu Packages if none exist
+  // Seed restaurant menu items if empty
+  seedMenuCategoriesAndItems(db);
+}
+
+function seedCorporateData(db: Database.Database) {
+  // Only seed demo corporate accounts and templates in development/test environments
+  if (!isProduction()) {
+    const accountsCount = db.prepare("SELECT COUNT(*) as n FROM corporate_accounts").get() as { n: number };
+    if (accountsCount.n === 0) {
+      const acc1 = db.prepare(`
+        INSERT INTO corporate_accounts (company_name, legal_name, account_code, billing_email, billing_phone, tax_id, payment_terms, credit_limit_tsh, status, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
+      `).run(
+        "Vodacom Tanzania PLC",
+        "Vodacom Tanzania Public Limited Company",
+        "VODA-HQ",
+        "procurement@vodacom.co.tz",
+        "+255 754 000 111",
+        "100-245-890",
+        "NET_30",
+        5000000,
+        "Key enterprise account. Regular Friday team lunches & executive meetings."
+      );
+      const acc1Id = acc1.lastInsertRowid as number;
+
+      db.prepare(`
+        INSERT INTO corporate_locations (corporate_account_id, label, area, building_name, address, floor, office_number, delivery_instructions)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        acc1Id,
+        "Vodacom Tower (Headquarters)",
+        "Mlimani / Ubungo",
+        "Vodacom Tower",
+        "Sam Nujoma Rd, Dar es Salaam",
+        "7th Floor",
+        "Executive & Tech Hub",
+        "Check in at Gate 2 security. Security will phone receptionist on 7th floor."
+      );
+
+      db.prepare(`
+        INSERT INTO corporate_locations (corporate_account_id, label, area, building_name, address, floor, office_number, delivery_instructions)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        acc1Id,
+        "Vodacom Innovation Lab",
+        "Masaki / Oysterbay",
+        "Peninsula Plaza",
+        "Toure Drive, Masaki",
+        "3rd Floor",
+        "Innovation Suite 302",
+        "Drop off at 3rd Floor tech hub entrance."
+      );
+
+      db.prepare(`
+        INSERT INTO corporate_contacts (corporate_account_id, full_name, email, phone, role, is_primary)
+        VALUES (?, ?, ?, ?, 'administrator', 1)
+      `).run(acc1Id, "Amina Juma", "amina.j@vodacom.co.tz", "+255 754 112 233");
+
+      db.prepare(`
+        INSERT INTO corporate_contacts (corporate_account_id, full_name, email, phone, role, is_primary)
+        VALUES (?, ?, ?, ?, 'order_contact', 0)
+      `).run(acc1Id, "David Mwakipesile", "david.m@vodacom.co.tz", "+255 754 445 566");
+
+      const acc2 = db.prepare(`
+        INSERT INTO corporate_accounts (company_name, legal_name, account_code, billing_email, billing_phone, tax_id, payment_terms, credit_limit_tsh, status, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
+      `).run(
+        "CRDB Bank Towers",
+        "CRDB Bank PLC",
+        "CRDB-HQ",
+        "admin.meals@crdbbank.co.tz",
+        "+255 713 000 222",
+        "102-554-321",
+        "NET_14",
+        3500000,
+        "Corporate branch lunch supplier. Board meetings and staff training events."
+      );
+      const acc2Id = acc2.lastInsertRowid as number;
+
+      db.prepare(`
+        INSERT INTO corporate_locations (corporate_account_id, label, area, building_name, address, floor, office_number, delivery_instructions)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        acc2Id,
+        "CRDB Head Office Tower",
+        "Posta / CBD",
+        "CRDB HQ Tower",
+        "Azikiwe Street, Posta",
+        "12th Floor",
+        "Executive Boardroom Suite",
+        "Deliver through Posta entrance cargo lift, security badge required."
+      );
+
+      db.prepare(`
+        INSERT INTO corporate_contacts (corporate_account_id, full_name, email, phone, role, is_primary)
+        VALUES (?, ?, ?, ?, 'order_contact', 1)
+      `).run(acc2Id, "Baraka Mwangi", "baraka.m@crdbbank.co.tz", "+255 713 998 877");
+
+      const acc3 = db.prepare(`
+        INSERT INTO corporate_accounts (company_name, legal_name, account_code, billing_email, billing_phone, tax_id, payment_terms, credit_limit_tsh, status, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
+      `).run(
+        "Swahili Tech Labs",
+        "Swahili Tech Labs Ltd",
+        "SW-TECH",
+        "ops@swahilitech.co.tz",
+        "+255 784 555 666",
+        "119-998-223",
+        "DUE_ON_DELIVERY",
+        1500000,
+        "Startup studio. Bi-weekly demo day catering."
+      );
+      const acc3Id = acc3.lastInsertRowid as number;
+
+      db.prepare(`
+        INSERT INTO corporate_locations (corporate_account_id, label, area, building_name, address, floor, office_number, delivery_instructions)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        acc3Id,
+        "Tech Hub Studio",
+        "Mikocheni",
+        "Silicon Dar Building",
+        "Old Bagamoyo Rd, Mikocheni",
+        "2nd Floor",
+        "Suite 204",
+        "Ring bell at reception."
+      );
+
+      db.prepare(`
+        INSERT INTO corporate_contacts (corporate_account_id, full_name, email, phone, role, is_primary)
+        VALUES (?, ?, ?, ?, 'administrator', 1)
+      `).run(acc3Id, "Zuhura Salum", "zuhura@swahilitech.co.tz", "+255 784 555 666");
+    }
+  }
+
+  // Seed Corporate Menu Packages (Product Offerings) in all environments if none exist
   const pkgCount = db.prepare("SELECT COUNT(*) as n FROM corporate_menu_packages").get() as { n: number };
   if (pkgCount.n === 0) {
     const burgerItem = db.prepare("SELECT id FROM menu_items WHERE name = 'Classic Burger'").get() as { id: number } | undefined;
@@ -1080,24 +1125,26 @@ function seedCorporateData(db: Database.Database) {
     if (cokeItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 6)").run(p5Id, cokeItem.id);
   }
 
-  // Seed Sample Order Templates
-  const templateCount = db.prepare("SELECT COUNT(*) as n FROM corporate_order_templates").get() as { n: number };
-  if (templateCount.n === 0) {
-    const vodaAccount = db.prepare("SELECT id FROM corporate_accounts WHERE account_code = 'VODA-HQ'").get() as { id: number } | undefined;
-    const vodaLocation = db.prepare("SELECT id FROM corporate_locations WHERE corporate_account_id = ?").get(vodaAccount?.id) as { id: number } | undefined;
-    const pkg1 = db.prepare("SELECT id, name FROM corporate_menu_packages WHERE name LIKE '%Executive%'").get() as { id: number; name: string } | undefined;
+  // Seed Sample Order Templates (Development/Test only)
+  if (!isProduction()) {
+    const templateCount = db.prepare("SELECT COUNT(*) as n FROM corporate_order_templates").get() as { n: number };
+    if (templateCount.n === 0) {
+      const vodaAccount = db.prepare("SELECT id FROM corporate_accounts WHERE account_code = 'VODA-HQ'").get() as { id: number } | undefined;
+      const vodaLocation = db.prepare("SELECT id FROM corporate_locations WHERE corporate_account_id = ?").get(vodaAccount?.id) as { id: number } | undefined;
+      const pkg1 = db.prepare("SELECT id, name FROM corporate_menu_packages WHERE name LIKE '%Executive%'").get() as { id: number; name: string } | undefined;
 
-    if (vodaAccount && pkg1) {
-      const t1 = db.prepare(`
-        INSERT INTO corporate_order_templates (corporate_account_id, name, default_location_id, default_attendee_count, created_by_name)
-        VALUES (?, 'Friday Engineering All-Hands Lunch', ?, 15, 'Amina Juma')
-      `).run(vodaAccount.id, vodaLocation?.id || null);
-      const t1Id = t1.lastInsertRowid as number;
+      if (vodaAccount && pkg1) {
+        const t1 = db.prepare(`
+          INSERT INTO corporate_order_templates (corporate_account_id, name, default_location_id, default_attendee_count, created_by_name)
+          VALUES (?, 'Friday Engineering All-Hands Lunch', ?, 15, 'Amina Juma')
+        `).run(vodaAccount.id, vodaLocation?.id || null);
+        const t1Id = t1.lastInsertRowid as number;
 
-      db.prepare(`
-        INSERT INTO corporate_order_template_items (template_id, package_id, name_snapshot, quantity)
-        VALUES (?, ?, ?, 15)
-      `).run(t1Id, pkg1.id, pkg1.name);
+        db.prepare(`
+          INSERT INTO corporate_order_template_items (template_id, package_id, name_snapshot, quantity)
+          VALUES (?, ?, ?, 15)
+        `).run(t1Id, pkg1.id, pkg1.name);
+      }
     }
   }
 }

@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: sumaiyyah-fast-food
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    disk:
+      name: sumaiyyah-data
+      mountPath: /data
+      sizeGB: 10
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DROIDBOT_DB_PATH
+        value: /data/app.db
+      - key: DROIDBOT_UPLOADS_PATH
+        value: /data/uploads
+      - key: DROIDBOT_COOKIE_SECURE
+        value: "true"
+      - key: DROIDBOT_SESSION_SECRET
+        generateValue: true
+      - key: INITIAL_MANAGER_EMAIL
+        sync: false
+      - key: INITIAL_MANAGER_PASSWORD
+        sync: false
+      - key: INITIAL_MANAGER_NAME
+        value: "Operations Manager"
