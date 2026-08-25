@@ -745,36 +745,40 @@ export default function OrderClient({
 
       {/* FOOTER (ask 19) */}
       <footer className="sff-footer" data-testid="landing-footer">
-        <div className="sff-footer-logo">Sumaiyyah<span>.</span></div>
-        <p className="sff-footer-desc">
-          Dar es Salaam&apos;s most beloved Swahili street food, serving the community since 2012.
-        </p>
-        <div className="sff-footer-cols">
-          <div className="sff-footer-col">
-            <div className="sff-footer-h">Visit us</div>
-            <div className="sff-footer-line" data-testid="landing-footer-hours">🕒 Mon–Sun, 8:00 AM – 11:00 PM</div>
-            <a className="sff-footer-line" data-testid="landing-footer-maps" href="https://maps.google.com/?q=Kariakoo+Dar+es+Salaam" target="_blank" rel="noopener noreferrer">📍 Kariakoo, Dar es Salaam (Map)</a>
+        <div className="sff-footer-inner">
+          <div className="sff-footer-top">
+            <div className="sff-footer-logo">Sumaiyyah<span>.</span></div>
+            <p className="sff-footer-desc">
+              Dar es Salaam&apos;s most beloved Swahili street food, serving the community since 2012.
+            </p>
           </div>
-          <div className="sff-footer-col">
-            <div className="sff-footer-h">Contact</div>
-            <a className="sff-footer-line" data-testid="landing-footer-phone" href="tel:+255700000000">📞 +255 700 000 000</a>
-            <a className="sff-footer-line" data-testid="landing-footer-whatsapp" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer">💬 WhatsApp order</a>
+          <div className="sff-footer-cols">
+            <div className="sff-footer-col">
+              <div className="sff-footer-h">Visit us</div>
+              <div className="sff-footer-line" data-testid="landing-footer-hours">🕒 Mon–Sun, 8:00 AM – 11:00 PM</div>
+              <a className="sff-footer-line" data-testid="landing-footer-maps" href="https://maps.google.com/?q=Kariakoo+Dar+es+Salaam" target="_blank" rel="noopener noreferrer">📍 Kariakoo, Dar es Salaam (Map)</a>
+            </div>
+            <div className="sff-footer-col">
+              <div className="sff-footer-h">Contact</div>
+              <a className="sff-footer-line" data-testid="landing-footer-phone" href="tel:+255700000000">📞 +255 700 000 000</a>
+              <a className="sff-footer-line" data-testid="landing-footer-whatsapp" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer">💬 WhatsApp order</a>
+            </div>
+            <div className="sff-footer-col">
+              <div className="sff-footer-h">Follow</div>
+              <a className="sff-footer-line" data-testid="landing-footer-instagram" href="https://instagram.com/" target="_blank" rel="noopener noreferrer">📸 Instagram</a>
+              <a className="sff-footer-line" data-testid="landing-footer-tiktok" href="https://tiktok.com/" target="_blank" rel="noopener noreferrer">🎵 TikTok</a>
+            </div>
           </div>
-          <div className="sff-footer-col">
-            <div className="sff-footer-h">Follow</div>
-            <a className="sff-footer-line" data-testid="landing-footer-instagram" href="https://instagram.com/" target="_blank" rel="noopener noreferrer">📸 Instagram</a>
-            <a className="sff-footer-line" data-testid="landing-footer-tiktok" href="https://tiktok.com/" target="_blank" rel="noopener noreferrer">🎵 TikTok</a>
+          <div className="sff-footer-pay" data-testid="landing-footer-payments">
+            Payments: 💵 Cash · 📱 M-Pesa · 📱 Tigo Pesa · 📱 Airtel Money
           </div>
+          <div className="sff-footer-legal">
+            <a href="#" data-testid="landing-footer-privacy">Privacy Policy</a>
+            <span aria-hidden="true">·</span>
+            <a href="#" data-testid="landing-footer-terms">Terms of Service</a>
+          </div>
+          <p className="sff-footer-copy">© 2025 Sumaiyyah Fast Food. All rights reserved.</p>
         </div>
-        <div className="sff-footer-pay" data-testid="landing-footer-payments">
-          Payments: 💵 Cash · 📱 M-Pesa · 📱 Tigo Pesa · 📱 Airtel Money
-        </div>
-        <div className="sff-footer-legal">
-          <a href="#" data-testid="landing-footer-privacy">Privacy Policy</a>
-          <span aria-hidden="true">·</span>
-          <a href="#" data-testid="landing-footer-terms">Terms of Service</a>
-        </div>
-        <p className="sff-footer-copy">© 2025 Sumaiyyah Fast Food. All rights reserved.</p>
       </footer>
 
       {/* FLOATING CART (ask 24) */}

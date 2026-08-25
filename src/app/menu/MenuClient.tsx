@@ -267,7 +267,11 @@ export default function MenuClient({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={item.image_url} alt="" className="w-8 h-8 rounded object-cover border border-slate-700 flex-shrink-0" />
                       ) : (
-                        <div className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-600 text-xs flex-shrink-0">🍽️</div>
+                        <div className="w-8 h-8 rounded bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9.5A2.5 2.5 0 015.5 7h13A2.5 2.5 0 0121 9.5v9A2.5 2.5 0 0118.5 21h-13A2.5 2.5 0 013 18.5v-9zM8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          </svg>
+                        </div>
                       )}
                       {item.name}
                     </div>
@@ -407,7 +411,11 @@ export default function MenuClient({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={itemImageUrl} alt="" className="w-14 h-14 rounded-lg object-cover border border-slate-700" />
                 ) : (
-                  <div className="w-14 h-14 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-600 text-xl">🍽️</div>
+                  <div className="w-14 h-14 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9.5A2.5 2.5 0 015.5 7h13A2.5 2.5 0 0121 9.5v9A2.5 2.5 0 0118.5 21h-13A2.5 2.5 0 013 18.5v-9zM8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    </svg>
+                  </div>
                 )}
                 <label className="flex-1 cursor-pointer bg-slate-800 text-slate-100 border border-slate-700 rounded-lg py-2 text-sm text-center hover:bg-slate-700 transition-colors">
                   {itemUploading ? "Uploading..." : itemImageUrl ? "Change Photo" : "Upload Photo"}

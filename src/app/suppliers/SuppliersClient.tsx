@@ -213,7 +213,12 @@ export default function SuppliersClient() {
       {isEmpty && (
         <EmptyState
           testId="payments-empty"
-          icon="🏪"
+          icon={
+            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.4}
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0h-2M5 21H3m2 0h2M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 8h6" />
+            </svg>
+          }
           title="No supplier payments yet"
           description="Record your first supplier payment to start tracking expenses."
           action={
