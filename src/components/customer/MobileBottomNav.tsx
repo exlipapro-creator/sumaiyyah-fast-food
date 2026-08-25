@@ -18,7 +18,13 @@ export default function MobileBottomNav() {
   const pathname = usePathname();
   const { itemCount, favorites } = useCart();
 
-  const navItems = [
+  const navItems: Array<{
+    href: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    count?: number;
+    hasBadge?: boolean;
+  }> = [
     { href: "/", label: "Home", icon: Home },
     { href: "/order", label: "Menu", icon: CookingPot },
     { href: "/corporate", label: "Office", icon: Building2 },

@@ -28,7 +28,6 @@ export default function CustomerNavbar() {
   const navLinks = [
     { href: "/order", label: "Menu & Order", icon: Compass },
     { href: "/corporate", label: "Office & Catering", icon: Building2, badge: "Corporate" },
-    { href: "/deals", label: "Deals & Offers", icon: BadgePercent },
     { href: "/track-order", label: "Live Tracking", icon: Route },
     { href: "/favorites", label: "Favorites", icon: Heart },
   ];

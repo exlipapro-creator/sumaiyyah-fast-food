@@ -415,12 +415,16 @@ export async function POST(req: NextRequest) {
 
     const orderRecord = db.prepare("SELECT * FROM orders WHERE id = ?").get(transactionResult.orderId);
     const orderItems = db.prepare("SELECT * FROM order_items WHERE order_id = ?").all(transactionResult.orderId);
+    const invoiceRecord = transactionResult.invoiceNumber
+      ? db.prepare("SELECT * FROM invoices WHERE invoice_number = ?").get(transactionResult.invoiceNumber)
+      : null;
 
     return NextResponse.json(
       {
         success: true,
         order: orderRecord,
         items: orderItems,
+        invoice: invoiceRecord,
         receipt_no: transactionResult.receipt_no,
         invoice_number: transactionResult.invoiceNumber,
         company_name: resolvedCompanyName,

@@ -90,7 +90,7 @@ function initSchema(db: Database.Database) {
       discount_value INTEGER NOT NULL DEFAULT 0,
       discount_amount_tsh INTEGER NOT NULL DEFAULT 0,
       total_tsh INTEGER NOT NULL,
-      payment_method TEXT NOT NULL CHECK(payment_method IN ('cash','mobile','card')),
+      payment_method TEXT NOT NULL CHECK(payment_method IN ('cash','mobile','card','bank_transfer','invoice')),
       status TEXT NOT NULL DEFAULT 'completed' CHECK(status IN ('completed','voided')),
       voided_at TEXT,
       voided_by INTEGER REFERENCES users(id),
@@ -418,6 +418,65 @@ function initSchema(db: Database.Database) {
   }
   if (!orderCols.some((c) => c.name === "corporate_account_id")) {
     db.exec("ALTER TABLE orders ADD COLUMN corporate_account_id INTEGER REFERENCES corporate_accounts(id)");
+  }
+
+  // Check if existing orders table has legacy check constraint without invoice
+  try {
+    const tableSql = (db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'orders'").get() as { sql: string } | undefined)?.sql || "";
+    if (tableSql && !tableSql.includes("invoice")) {
+      db.exec(`
+        PRAGMA foreign_keys = OFF;
+        CREATE TABLE orders_upgrade_pm (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          receipt_no TEXT NOT NULL UNIQUE,
+          cashier_id INTEGER NOT NULL REFERENCES users(id),
+          subtotal_tsh INTEGER NOT NULL,
+          discount_type TEXT NOT NULL DEFAULT 'none' CHECK(discount_type IN ('none','percent','fixed')),
+          discount_value INTEGER NOT NULL DEFAULT 0,
+          discount_amount_tsh INTEGER NOT NULL DEFAULT 0,
+          total_tsh INTEGER NOT NULL,
+          payment_method TEXT NOT NULL CHECK(payment_method IN ('cash','mobile','card','bank_transfer','invoice')),
+          status TEXT NOT NULL DEFAULT 'completed' CHECK(status IN ('completed','voided')),
+          voided_at TEXT,
+          voided_by INTEGER REFERENCES users(id),
+          void_reason TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          order_type TEXT NOT NULL DEFAULT 'pos',
+          customer_name TEXT,
+          customer_phone TEXT,
+          customer_address TEXT,
+          special_notes TEXT,
+          fulfillment_status TEXT NOT NULL DEFAULT 'completed',
+          estimated_delivery_at TEXT,
+          customer_id INTEGER,
+          order_channel TEXT NOT NULL DEFAULT 'pos',
+          is_scheduled INTEGER NOT NULL DEFAULT 0,
+          scheduled_date TEXT,
+          delivery_window_start TEXT,
+          delivery_window_end TEXT,
+          target_dispatch_at TEXT,
+          company_name TEXT,
+          attendee_count INTEGER,
+          corporate_account_id INTEGER REFERENCES corporate_accounts(id)
+        );
+        INSERT INTO orders_upgrade_pm SELECT 
+          id, receipt_no, cashier_id, subtotal_tsh, discount_type, discount_value, discount_amount_tsh, total_tsh,
+          payment_method, status, voided_at, voided_by, void_reason, created_at,
+          order_type, customer_name, customer_phone, customer_address, special_notes,
+          fulfillment_status, estimated_delivery_at, customer_id, order_channel,
+          is_scheduled, scheduled_date, delivery_window_start, delivery_window_end, target_dispatch_at,
+          company_name, attendee_count, corporate_account_id
+        FROM orders;
+        DROP TABLE orders;
+        ALTER TABLE orders_upgrade_pm RENAME TO orders;
+        CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+        CREATE INDEX IF NOT EXISTS idx_orders_channel ON orders(order_channel, fulfillment_status);
+        CREATE INDEX IF NOT EXISTS idx_orders_scheduled ON orders(is_scheduled, scheduled_date);
+        PRAGMA foreign_keys = ON;
+      `);
+    }
+  } catch (e) {
+    console.warn("Orders table payment_method check migration note:", e);
   }
 
   // Create additional lookup indexes

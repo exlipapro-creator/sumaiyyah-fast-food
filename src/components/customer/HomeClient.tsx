@@ -22,6 +22,7 @@ import {
   Check,
   Smartphone,
   ArrowRight,
+  Building2,
 } from "lucide-react";
 
 interface HomeClientProps {
@@ -139,11 +140,11 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
                   <span>Order Now</span>
                 </Link>
                 <Link
-                  href="/deals"
+                  href="/corporate"
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-2xs"
                 >
-                  <Tag className="w-3.5 h-3.5 text-[#E5002B]" />
-                  <span>View Deals ({promotions.length})</span>
+                  <Building2 className="w-3.5 h-3.5 text-[#0062C3]" />
+                  <span>Office & Catering</span>
                 </Link>
                 <Link
                   href="/track-order"
