@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "./src/lib/auth-edge";
 
-// Public, unauthenticated surfaces: the staff login + the customer-facing
-// landing/ordering page and its read-only live-menu API.
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/order", "/api/public", "/api/uploads"];
+// Public, unauthenticated surfaces: customer homepage, ordering, menu, tracking, etc.
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/order",
+  "/deals",
+  "/cart",
+  "/checkout",
+  "/track-order",
+  "/favorites",
+  "/account",
+  "/api/public",
+  "/api/customer",
+  "/api/uploads"
+];
 const MANAGER_ONLY_PATHS = ["/menu", "/reports", "/suppliers", "/users", "/audit", "/api/users", "/api/menu-items", "/api/categories", "/api/reports/sales", "/api/reports/best-sellers", "/api/reports/sales.csv", "/api/supplier-payments", "/api/audit-log"];
 // Read-only endpoints that cashiers legitimately need (e.g. loading the menu in
 // the POS screen). For these prefixes we only enforce the manager requirement on
@@ -14,6 +27,11 @@ const SAFE_METHODS = ["GET", "HEAD"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Allow public home page
+  if (pathname === "/") {
+    return NextResponse.next();
+  }
 
   // Allow public paths
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {

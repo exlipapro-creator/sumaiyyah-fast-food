@@ -18,10 +18,23 @@ export async function GET(req: NextRequest) {
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
     const status = url.searchParams.get("status");
-    let query = "SELECT o.*, u.name as cashier_name FROM orders o JOIN users u ON o.cashier_id = u.id WHERE 1=1";
+    let query = `
+      SELECT o.*, u.name as cashier_name,
+             cod.service_context, cod.delivery_window, cod.building_name, cod.floor_office,
+             cod.po_reference_number, cod.billing_status,
+             inv.invoice_number, inv.status as invoice_status
+      FROM orders o
+      JOIN users u ON o.cashier_id = u.id
+      LEFT JOIN corporate_order_details cod ON cod.order_id = o.id
+      LEFT JOIN invoices inv ON inv.order_id = o.id
+      WHERE 1=1
+    `;
     const params: (string | number)[] = [];
-    // Non-managers may only see their own orders (prevents IDOR across cashiers).
-    if (session.role !== "manager") { query += " AND o.cashier_id = ?"; params.push(session.id); }
+    // Non-managers may see their own POS orders + all web/corporate delivery orders
+    if (session.role !== "manager") {
+      query += " AND (o.cashier_id = ? OR o.order_channel IN ('online', 'corporate') OR o.is_scheduled = 1)";
+      params.push(session.id);
+    }
     if (from) { query += " AND date(o.created_at) >= ?"; params.push(from); }
     if (to) { query += " AND date(o.created_at) <= ?"; params.push(to); }
     if (status && ["completed", "voided"].includes(status)) { query += " AND o.status = ?"; params.push(status); }

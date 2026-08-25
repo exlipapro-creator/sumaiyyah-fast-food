@@ -1,4 +1,7 @@
-import type { PublicMenuItem } from "./page";
+import type { PublicItem } from "@/app/api/public/menu/route";
+
+export type PublicMenuItem = PublicItem;
+
 
 // ── Deterministic per-item metadata ──────────────────────────────────────────
 // The menu_items table only stores {id,name,price,category}. To make the public

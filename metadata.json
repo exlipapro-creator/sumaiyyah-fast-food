@@ -1,0 +1,6 @@
+{
+  "name": "Sumaiyyah Fast Food POS",
+  "description": "Full-stack digital commerce and operations platform for Sumaiyyah Fast Food — customer online ordering, real-time kitchen tracking, POS terminal, menu & stock management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

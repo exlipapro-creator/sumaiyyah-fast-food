@@ -1,194 +1,127 @@
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import React from "react";
 import getDb from "@/lib/db";
-import AppShell from "@/components/AppShell";
-import StatCard from "@/components/StatCard";
-import Link from "next/link";
+import type { PublicItem } from "@/app/api/public/menu/route";
+import CustomerNavbar from "@/components/customer/CustomerNavbar";
+import CustomerFooter from "@/components/customer/CustomerFooter";
+import MobileBottomNav from "@/components/customer/MobileBottomNav";
+import HomeClient from "@/components/customer/HomeClient";
+import { CartProvider } from "@/context/CartContext";
 
 export const dynamic = "force-dynamic";
 
-async function getDashboardData() {
+async function getInitialHomeData() {
   const db = getDb();
-  const today = new Date().toISOString().slice(0, 10);
-  const yearMonth = new Date().toISOString().slice(0, 7);
+  const categories = db
+    .prepare("SELECT id, name FROM categories ORDER BY sort_order ASC, id ASC")
+    .all() as { id: number; name: string }[];
 
-  const revenueToday = (db.prepare(
-    "SELECT COALESCE(SUM(total_tsh), 0) as v FROM orders WHERE date(created_at) = ? AND status = 'completed'"
-  ).get(today) as { v: number }).v;
+  const rows = db
+    .prepare(
+      `SELECT mi.id, mi.name, mi.price_tsh, mi.category_id, c.name as category_name, mi.image_url,
+              mi.description, mi.is_featured, mi.is_deal, mi.prep_time_min, mi.calories, mi.spiciness,
+              mi.dietary_tags, mi.options_json, mi.track_stock, mi.stock_qty,
+              CASE WHEN mi.track_stock = 1 AND mi.stock_qty <= 0 THEN 0 ELSE 1 END as in_stock
+       FROM menu_items mi
+       JOIN categories c ON mi.category_id = c.id
+       WHERE mi.deleted = 0 AND mi.active = 1
+       ORDER BY c.sort_order ASC, mi.sort_order ASC, mi.id ASC`
+    )
+    .all() as {
+      id: number;
+      name: string;
+      price_tsh: number;
+      category_id: number;
+      category_name: string;
+      image_url: string | null;
+      description: string | null;
+      is_featured: number;
+      is_deal: number;
+      prep_time_min: number;
+      calories: number;
+      spiciness: string;
+      dietary_tags: string | null;
+      options_json: string | null;
+      track_stock: number;
+      stock_qty: number;
+      in_stock: number;
+    }[];
 
-  const transactionsToday = (db.prepare(
-    "SELECT COUNT(*) as v FROM orders WHERE date(created_at) = ? AND status = 'completed'"
-  ).get(today) as { v: number }).v;
+  const items: PublicItem[] = rows.map((r) => {
+    let dietaryTags: string[] = [];
+    try {
+      if (r.dietary_tags) dietaryTags = JSON.parse(r.dietary_tags);
+    } catch {}
 
-  // Last sale time today
-  const lastSale = db.prepare(
-    "SELECT created_at FROM orders WHERE date(created_at) = ? AND status = 'completed' ORDER BY created_at DESC LIMIT 1"
-  ).get(today) as { created_at: string } | undefined;
+    let options: {
+      variants?: { name: string; price_diff: number }[];
+      addons?: { name: string; price: number }[];
+    } = {};
+    try {
+      if (r.options_json) options = JSON.parse(r.options_json);
+    } catch {}
 
-  // Items sold today broken down by category
-  const itemsByCategory = db.prepare(`
-    SELECT c.name as category, COALESCE(SUM(oi.quantity), 0) as qty
-    FROM order_items oi
-    JOIN orders o ON oi.order_id = o.id
-    JOIN menu_items mi ON oi.menu_item_id = mi.id
-    JOIN categories c ON mi.category_id = c.id
-    WHERE date(o.created_at) = ? AND o.status = 'completed'
-    GROUP BY c.id, c.name
-    ORDER BY c.sort_order
-  `).all(today) as { category: string; qty: number }[];
+    return {
+      id: r.id,
+      name: r.name,
+      price_tsh: r.price_tsh,
+      category_id: r.category_id,
+      category_name: r.category_name,
+      in_stock: r.in_stock === 1,
+      image_url: r.image_url,
+      description: r.description || `Fresh and delicious ${r.name}`,
+      is_featured: r.is_featured === 1,
+      is_deal: r.is_deal === 1,
+      prep_time_min: r.prep_time_min || 12,
+      calories: r.calories || 350,
+      spiciness: r.spiciness || "Mild",
+      dietary_tags: dietaryTags.length > 0 ? dietaryTags : ["Halal"],
+      options,
+      track_stock: r.track_stock === 1,
+      stock_qty: r.stock_qty || 0,
+    };
+  });
 
-  const totalItemsToday = itemsByCategory.reduce((sum, r) => sum + r.qty, 0);
+  const promotions = db
+    .prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC")
+    .all() as {
+      id: number;
+      code: string;
+      title: string;
+      description: string;
+      discount_type: "percent" | "fixed";
+      discount_value: number;
+      min_order_tsh: number;
+      badge: string | null;
+    }[];
 
-  const supplierMonth = (db.prepare(
-    "SELECT COALESCE(SUM(amount_tsh), 0) as v FROM supplier_payments WHERE strftime('%Y-%m', paid_on) = ?"
-  ).get(yearMonth) as { v: number }).v;
-
-  const revenueMonth = (db.prepare(
-    "SELECT COALESCE(SUM(total_tsh), 0) as v FROM orders WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'"
-  ).get(yearMonth) as { v: number }).v;
-
-  const profitMonth = revenueMonth - supplierMonth;
+  const availableCategories = categories.filter((c) =>
+    items.some((i) => i.category_id === c.id)
+  );
 
   return {
-    revenueToday,
-    transactionsToday,
-    lastSale: lastSale?.created_at ?? null,
-    itemsByCategory,
-    totalItemsToday,
-    supplierMonth,
-    profitMonth,
+    categories: availableCategories,
+    items,
+    promotions,
   };
 }
 
-export default async function DashboardPage() {
-  const session = await getSession();
-  if (!session) redirect("/login");
-
-  const data = await getDashboardData();
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const lastSaleTime = data.lastSale
-    ? new Date(data.lastSale).toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-    : null;
+export default async function HomePage() {
+  const data = await getInitialHomeData();
 
   return (
-    <AppShell user={session}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-slate-50">Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">{dateStr}</p>
-        </div>
-
-        {/* Today stats */}
-        <div>
-          <h2 className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-semibold">Today</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <StatCard
-              testId="stat-revenue-today"
-              label="Revenue"
-              value={data.revenueToday}
-              isMoney={true}
-              color="amber"
-            />
-            <StatCard
-              testId="stat-transactions-today"
-              label="Transactions"
-              value={data.transactionsToday}
-              isMoney={false}
-              color="sky"
-              subLabel={lastSaleTime ? `Last sale at ${lastSaleTime}` : undefined}
-            />
-            <StatCard
-              testId="stat-items-today"
-              label="Items Sold"
-              value={data.totalItemsToday}
-              isMoney={false}
-              color="sky"
-            />
-          </div>
-        </div>
-
-        {/* Items sold by category */}
-        {data.itemsByCategory.length > 0 && (
-          <div>
-            <h2 className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-semibold">Items Sold by Category</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {data.itemsByCategory.map(row => (
-                <div
-                  key={row.category}
-                  className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3"
-                >
-                  <div className="text-xs text-slate-500 uppercase tracking-wide mb-1 truncate">{row.category}</div>
-                  <div className="text-xl font-bold text-slate-100 tabular-nums">{row.qty.toLocaleString()}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Month stats */}
-        <div>
-          <h2 className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-semibold">This Month</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <StatCard
-              testId="stat-supplier-month"
-              label="Supplier Spend"
-              value={data.supplierMonth}
-              isMoney={true}
-              color="rose"
-            />
-            <StatCard
-              testId="stat-profit"
-              label="Estimated Profit"
-              value={data.profitMonth}
-              isMoney={true}
-              color="emerald"
-            />
-          </div>
-        </div>
-
-        {/* Quick actions */}
-        <div>
-          <h2 className="text-xs uppercase tracking-wide text-slate-500 mb-3 font-semibold">Quick Actions</h2>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/pos"
-              className="bg-amber-500 text-slate-950 font-semibold rounded-lg px-5 py-2.5 hover:bg-amber-400 transition-colors text-sm"
-            >
-              Open POS
-            </Link>
-            {session.role === "manager" && (
-              <>
-                <Link
-                  href="/reports"
-                  className="bg-slate-800 text-slate-100 border border-slate-700 rounded-lg px-5 py-2.5 hover:bg-slate-700 transition-colors text-sm"
-                >
-                  View Reports
-                </Link>
-                <Link
-                  href="/suppliers"
-                  className="bg-slate-800 text-slate-100 border border-slate-700 rounded-lg px-5 py-2.5 hover:bg-slate-700 transition-colors text-sm"
-                >
-                  Suppliers
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-
+    <CartProvider>
+      <div className="min-h-screen bg-[#F7FAFD] text-slate-900 flex flex-col selection:bg-[#0062C3] selection:text-white">
+        <CustomerNavbar />
+        <main className="flex-1">
+          <HomeClient
+            categories={data.categories}
+            items={data.items}
+            promotions={data.promotions}
+          />
+        </main>
+        <CustomerFooter />
+        <MobileBottomNav />
       </div>
-    </AppShell>
+    </CartProvider>
   );
 }

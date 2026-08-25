@@ -16,6 +16,28 @@ interface Order {
   status: "completed" | "voided";
   void_reason: string | null;
   created_at: string;
+  order_type?: "pos" | "delivery" | "pickup" | "dine_in";
+  order_channel?: string;
+  is_scheduled?: number;
+  scheduled_date?: string;
+  delivery_window_start?: string;
+  delivery_window_end?: string;
+  target_dispatch_at?: string;
+  company_name?: string;
+  attendee_count?: number;
+  service_context?: string;
+  delivery_window?: string;
+  building_name?: string;
+  floor_office?: string;
+  po_reference_number?: string;
+  billing_status?: string;
+  invoice_number?: string;
+  invoice_status?: string;
+  fulfillment_status?: "pending" | "confirmed" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "cancelled";
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  delivery_address?: string | null;
+  notes?: string | null;
 }
 
 interface OrderItem {
@@ -24,18 +46,23 @@ interface OrderItem {
   quantity: number;
   unit_price_tsh: number;
   line_total_tsh: number;
+  selected_variant?: string | null;
+  selected_addons_json?: string | null;
+  special_instructions?: string | null;
 }
 
 export default function OrdersClient({ isManager }: { isManager: boolean }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<"" | "completed" | "voided">("");
+  const [channelFilter, setChannelFilter] = useState<"all" | "corporate" | "delivery" | "pos">("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [detailItems, setDetailItems] = useState<OrderItem[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const [voidOrder, setVoidOrder] = useState<Order | null>(null);
   const [voidReason, setVoidReason] = useState("");
@@ -63,6 +90,19 @@ export default function OrdersClient({ isManager }: { isManager: boolean }) {
     fetchOrders();
   }, [fetchOrders]);
 
+  const filteredOrders = orders.filter(o => {
+    if (channelFilter === "corporate") {
+      return o.order_channel === "corporate" || o.is_scheduled === 1;
+    }
+    if (channelFilter === "delivery") {
+      return o.order_type === "delivery" && o.order_channel !== "corporate";
+    }
+    if (channelFilter === "pos") {
+      return o.order_type === "pos" || (!o.order_type && !o.order_channel);
+    }
+    return true;
+  });
+
   async function openDetail(order: Order) {
     setDetailOrder(order);
     setDetailItems([]);
@@ -71,10 +111,34 @@ export default function OrdersClient({ isManager }: { isManager: boolean }) {
       const res = await fetch(`/api/orders/${order.id}`);
       const data = await res.json();
       setDetailItems(data.items || []);
+      if (data.order) {
+        setDetailOrder(data.order);
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setDetailLoading(false);
+    }
+  }
+
+  async function handleUpdateFulfillmentStatus(newStatus: string) {
+    if (!detailOrder) return;
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/orders/${detailOrder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_status", fulfillment_status: newStatus }),
+      });
+      if (res.ok) {
+        const updated = { ...detailOrder, fulfillment_status: newStatus as any };
+        setDetailOrder(updated);
+        setOrders(prev => prev.map(o => o.id === detailOrder.id ? { ...o, fulfillment_status: newStatus as any } : o));
+      }
+    } catch (err) {
+      console.error("Failed to update status", err);
+    } finally {
+      setUpdatingStatus(false);
     }
   }
 
@@ -114,9 +178,9 @@ export default function OrdersClient({ isManager }: { isManager: boolean }) {
   return (
     <div data-testid="orders-page" className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-50">Orders</h1>
+        <h1 className="text-3xl font-bold text-slate-50">Orders Management</h1>
         <p className="text-slate-400 text-sm mt-1">
-          {isManager ? "All orders" : "Your orders"} — most recent first
+          {isManager ? "All POS and customer online orders" : "Your orders"} — most recent first
         </p>
       </div>
 
@@ -187,8 +251,9 @@ export default function OrdersClient({ isManager }: { isManager: boolean }) {
               <thead>
                 <tr className="border-b border-slate-800">
                   <th className="text-left px-5 py-3 text-xs uppercase tracking-wide text-slate-400">Receipt</th>
+                  <th className="text-left px-5 py-3 text-xs uppercase tracking-wide text-slate-400">Type</th>
                   <th className="text-left px-5 py-3 text-xs uppercase tracking-wide text-slate-400">Date</th>
-                  {isManager && <th className="text-left px-5 py-3 text-xs uppercase tracking-wide text-slate-400">Cashier</th>}
+                  {isManager && <th className="text-left px-5 py-3 text-xs uppercase tracking-wide text-slate-400">Cashier / Customer</th>}
                   <th className="text-left px-5 py-3 text-xs uppercase tracking-wide text-slate-400">Payment</th>
                   <th className="text-right px-5 py-3 text-xs uppercase tracking-wide text-slate-400">Total</th>
                   <th className="text-center px-5 py-3 text-xs uppercase tracking-wide text-slate-400">Status</th>
@@ -197,28 +262,51 @@ export default function OrdersClient({ isManager }: { isManager: boolean }) {
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {loading && (
-                  <tr><td colSpan={7} className="px-5 py-8 text-center text-slate-400">Loading...</td></tr>
+                  <tr><td colSpan={8} className="px-5 py-8 text-center text-slate-400">Loading...</td></tr>
                 )}
                 {!loading && orders.map(order => (
                   <tr key={order.id} data-testid={`order-row-${order.id}`} className="hover:bg-slate-800/60 transition-colors">
                     <td className="px-5 py-3 text-slate-100 font-medium font-mono">{order.receipt_no}</td>
-                    <td className="px-5 py-3 text-slate-400">{new Date(order.created_at).toLocaleString()}</td>
-                    {isManager && <td className="px-5 py-3 text-slate-400">{order.cashier_name}</td>}
-                    <td className="px-5 py-3 text-slate-400 capitalize">{order.payment_method}</td>
-                    <td className="px-5 py-3 text-right text-amber-500 tabular-nums">{formatTSH(order.total_tsh)}</td>
-                    <td className="px-5 py-3 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                        order.status === "voided" ? "bg-rose-500/20 text-rose-400" : "bg-emerald-500/20 text-emerald-400"
-                      }`}>
-                        {order.status === "voided" ? "Voided" : "Completed"}
+                    <td className="px-5 py-3 text-slate-400 uppercase text-xs font-mono">
+                      <span className="bg-slate-800 px-2 py-0.5 rounded text-amber-400">
+                        {order.order_type || "POS"}
                       </span>
+                    </td>
+                    <td className="px-5 py-3 text-slate-400">{new Date(order.created_at).toLocaleString()}</td>
+                    {isManager && (
+                      <td className="px-5 py-3 text-slate-300">
+                        {order.customer_name ? (
+                          <div>
+                            <span className="font-semibold text-slate-100">{order.customer_name}</span>
+                            {order.customer_phone && <span className="block text-xs text-slate-500 font-mono">{order.customer_phone}</span>}
+                          </div>
+                        ) : (
+                          order.cashier_name
+                        )}
+                      </td>
+                    )}
+                    <td className="px-5 py-3 text-slate-400 capitalize">{order.payment_method}</td>
+                    <td className="px-5 py-3 text-right text-amber-500 tabular-nums font-mono font-semibold">{formatTSH(order.total_tsh)}</td>
+                    <td className="px-5 py-3 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                          order.status === "voided" ? "bg-rose-500/20 text-rose-400" : "bg-emerald-500/20 text-emerald-400"
+                        }`}>
+                          {order.status === "voided" ? "Voided" : "Completed"}
+                        </span>
+                        {order.fulfillment_status && (
+                          <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            {order.fulfillment_status.replace(/_/g, " ")}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           data-testid={`order-view-${order.id}`}
                           onClick={() => openDetail(order)}
-                          className="text-slate-400 hover:text-amber-400 text-xs px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+                          className="text-slate-400 hover:text-amber-400 text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors font-medium"
                         >
                           View
                         </button>
@@ -226,7 +314,7 @@ export default function OrdersClient({ isManager }: { isManager: boolean }) {
                           <button
                             data-testid={`order-void-${order.id}`}
                             onClick={() => openVoid(order)}
-                            className="text-slate-400 hover:text-rose-400 text-xs px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+                            className="text-rose-400 hover:text-rose-300 text-xs px-2 py-1 rounded hover:bg-rose-900/30 transition-colors"
                           >
                             Void
                           </button>
@@ -249,35 +337,111 @@ export default function OrdersClient({ isManager }: { isManager: boolean }) {
               <div className="text-slate-400 text-sm">Loading...</div>
             ) : (
               <>
-                <div data-testid="order-detail-items" className="space-y-2">
-                  {detailItems.map(item => (
-                    <div key={item.id} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-300">{item.name_snapshot} × {item.quantity}</span>
-                      <span className="tabular-nums text-slate-200">{formatTSH(item.line_total_tsh)}</span>
+                {/* Kitchen / Fulfillment status control */}
+                {detailOrder.status !== "voided" && (
+                  <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs uppercase font-bold text-slate-300 tracking-wider">
+                        Kitchen & Delivery Fulfillment Status:
+                      </span>
+                      {updatingStatus && <span className="text-xs text-amber-400 animate-pulse">Updating...</span>}
                     </div>
-                  ))}
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: "pending", label: "Pending" },
+                        { id: "confirmed", label: "Confirmed" },
+                        { id: "preparing", label: "Preparing" },
+                        { id: "ready", label: "Ready" },
+                        { id: "out_for_delivery", label: "Out for Delivery" },
+                        { id: "delivered", label: "Delivered" },
+                      ].map(st => {
+                        const isCurrent = (detailOrder.fulfillment_status || "confirmed") === st.id;
+                        return (
+                          <button
+                            key={st.id}
+                            type="button"
+                            onClick={() => handleUpdateFulfillmentStatus(st.id)}
+                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                              isCurrent
+                                ? "bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20"
+                                : "bg-slate-900 text-slate-300 hover:bg-slate-700 border border-slate-700"
+                            }`}
+                          >
+                            {st.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Customer Details if delivery/pickup */}
+                {(detailOrder.customer_name || detailOrder.delivery_address || detailOrder.notes) && (
+                  <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3.5 space-y-1.5 text-xs text-slate-300">
+                    <div className="font-bold text-amber-400 uppercase text-[10px] tracking-wider">Customer Delivery Details:</div>
+                    {detailOrder.customer_name && <div><span className="text-slate-400">Name:</span> {detailOrder.customer_name}</div>}
+                    {detailOrder.customer_phone && <div><span className="text-slate-400">Phone:</span> {detailOrder.customer_phone}</div>}
+                    {detailOrder.delivery_address && <div><span className="text-slate-400">Address:</span> {detailOrder.delivery_address}</div>}
+                    {detailOrder.notes && <div><span className="text-slate-400">Notes:</span> &ldquo;{detailOrder.notes}&rdquo;</div>}
+                  </div>
+                )}
+
+                {/* Items list */}
+                <div className="space-y-2">
+                  <h4 className="text-xs uppercase tracking-wide text-slate-400 font-semibold">Items</h4>
+                  <div className="divide-y divide-slate-800 border border-slate-800 rounded-lg overflow-hidden">
+                    {detailItems.map(item => {
+                      let addons: { name: string; price: number }[] = [];
+                      try {
+                        if (item.selected_addons_json) addons = JSON.parse(item.selected_addons_json);
+                      } catch {}
+
+                      return (
+                        <div key={item.id} className="p-3 bg-slate-900/60 flex items-center justify-between text-sm">
+                          <div>
+                            <span className="text-slate-100 font-medium">{item.name_snapshot}</span>
+                            <span className="text-slate-500 text-xs ml-2">× {item.quantity}</span>
+                            {item.selected_variant && (
+                              <div className="text-xs text-amber-400">Portion: {item.selected_variant}</div>
+                            )}
+                            {addons.length > 0 && (
+                              <div className="text-xs text-slate-400">Add-ons: {addons.map(a => a.name).join(", ")}</div>
+                            )}
+                            {item.special_instructions && (
+                              <div className="text-xs text-slate-400 italic">&ldquo;{item.special_instructions}&rdquo;</div>
+                            )}
+                          </div>
+                          <span className="text-slate-300 font-mono">{formatTSH(item.line_total_tsh)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="space-y-1 pt-3 border-t border-slate-800 text-sm">
+
+                {/* Summary */}
+                <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-2 text-sm">
                   <div className="flex justify-between text-slate-400">
                     <span>Subtotal</span>
-                    <span className="tabular-nums">{formatTSH(detailOrder.subtotal_tsh)}</span>
+                    <span className="font-mono">{formatTSH(detailOrder.subtotal_tsh)}</span>
                   </div>
                   {detailOrder.discount_amount_tsh > 0 && (
                     <div className="flex justify-between text-emerald-400">
                       <span>Discount</span>
-                      <span className="tabular-nums">-{formatTSH(detailOrder.discount_amount_tsh)}</span>
+                      <span className="font-mono">-{formatTSH(detailOrder.discount_amount_tsh)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold text-slate-50 pt-1">
+                  <div className="flex justify-between font-bold text-slate-100 pt-2 border-t border-slate-800">
                     <span>Total</span>
-                    <span className="tabular-nums text-amber-500">{formatTSH(detailOrder.total_tsh)}</span>
+                    <span className="font-mono text-amber-400">{formatTSH(detailOrder.total_tsh)}</span>
+                  </div>
+                  <div className="text-xs text-slate-500 pt-2 space-y-1">
+                    <div>Payment: <span className="text-slate-300 capitalize">{detailOrder.payment_method}</span></div>
+                    <div>Status: <span className="text-slate-300 capitalize">{detailOrder.status}</span></div>
+                    {detailOrder.void_reason && (
+                      <div className="text-rose-400">Void reason: {detailOrder.void_reason}</div>
+                    )}
                   </div>
                 </div>
-                {detailOrder.status === "voided" && (
-                  <div className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
-                    Voided — {detailOrder.void_reason}
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -286,43 +450,43 @@ export default function OrdersClient({ isManager }: { isManager: boolean }) {
 
       {/* Void modal */}
       {voidOrder && (
-        <Modal title={`Void Receipt ${voidOrder.receipt_no}`} onClose={() => setVoidOrder(null)}>
+        <Modal title={`Void Order ${voidOrder.receipt_no}`} onClose={() => setVoidOrder(null)}>
           <div className="space-y-4">
             <p className="text-slate-300 text-sm">
-              This marks the order as voided and removes it from sales totals. Any tracked stock
-              consumed by this order will be restored. This cannot be undone.
+              Voiding this order will mark it as voided and restore tracked stock. This action cannot be undone.
             </p>
-            <div>
-              <label className="block text-sm text-slate-300 mb-1">Reason</label>
-              <textarea
-                data-testid="void-reason"
-                value={voidReason}
-                onChange={e => setVoidReason(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none resize-none"
-                rows={2}
-                placeholder="e.g. Customer changed order after payment"
-                autoFocus
-              />
-            </div>
             {voidError && (
-              <div data-testid="void-error" className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+              <div className="bg-rose-500/20 border border-rose-500/40 text-rose-400 p-3 rounded-lg text-sm">
                 {voidError}
               </div>
             )}
-            <div className="flex gap-3 pt-2">
+            <div>
+              <label className="block text-sm text-slate-300 mb-1">Reason for voiding *</label>
+              <textarea
+                data-testid="void-reason-input"
+                value={voidReason}
+                onChange={e => setVoidReason(e.target.value)}
+                placeholder="e.g., Customer changed mind, incorrect item scanned..."
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-100 focus:ring-2 focus:ring-amber-500 outline-none text-sm resize-none"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setVoidOrder(null)}
-                className="flex-1 bg-slate-800 text-slate-100 border border-slate-700 rounded-lg py-2 hover:bg-slate-700 transition-colors"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors"
               >
                 Cancel
               </button>
               <button
-                data-testid="void-confirm"
+                data-testid="void-confirm-btn"
+                type="button"
                 onClick={confirmVoid}
                 disabled={voidLoading}
-                className="flex-1 bg-rose-500 text-slate-950 font-semibold rounded-lg py-2 hover:bg-rose-400 disabled:opacity-60 transition-colors"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-lg text-sm transition-colors disabled:opacity-50"
               >
-                {voidLoading ? "Voiding..." : "Void Order"}
+                {voidLoading ? "Voiding..." : "Confirm Void"}
               </button>
             </div>
           </div>

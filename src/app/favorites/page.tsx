@@ -4,29 +4,13 @@ import type { PublicItem } from "@/app/api/public/menu/route";
 import CustomerNavbar from "@/components/customer/CustomerNavbar";
 import CustomerFooter from "@/components/customer/CustomerFooter";
 import MobileBottomNav from "@/components/customer/MobileBottomNav";
-import OrderClient from "./OrderClient";
+import FavoritesClient from "./FavoritesClient";
 import { CartProvider } from "@/context/CartContext";
 
 export const dynamic = "force-dynamic";
 
-function getLiveMenu(): {
-  categories: { id: number; name: string }[];
-  items: PublicItem[];
-  promotions: {
-    id: number;
-    code: string;
-    title: string;
-    description: string;
-    discount_type: "percent" | "fixed";
-    discount_value: number;
-    badge: string | null;
-  }[];
-} {
+function getAllMenuItems(): PublicItem[] {
   const db = getDb();
-  const categories = db
-    .prepare("SELECT id, name FROM categories ORDER BY sort_order ASC, id ASC")
-    .all() as { id: number; name: string }[];
-
   const rows = db
     .prepare(
       `SELECT mi.id, mi.name, mi.price_tsh, mi.category_id, c.name as category_name, mi.image_url,
@@ -58,7 +42,7 @@ function getLiveMenu(): {
       in_stock: number;
     }[];
 
-  const items: PublicItem[] = rows.map((r) => {
+  return rows.map((r) => {
     let dietaryTags: string[] = [];
     try {
       if (r.dietary_tags) dietaryTags = JSON.parse(r.dietary_tags);
@@ -92,44 +76,17 @@ function getLiveMenu(): {
       stock_qty: r.stock_qty || 0,
     };
   });
-
-  const promotions = db
-    .prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC")
-    .all() as {
-      id: number;
-      code: string;
-      title: string;
-      description: string;
-      discount_type: "percent" | "fixed";
-      discount_value: number;
-      min_order_tsh: number;
-      badge: string | null;
-    }[];
-
-  const availableCategories = categories.filter((c) =>
-    items.some((i) => i.category_id === c.id)
-  );
-
-  return {
-    categories: availableCategories,
-    items,
-    promotions,
-  };
 }
 
-export default function OrderLandingPage() {
-  const { categories, items, promotions } = getLiveMenu();
+export default function FavoritesPage() {
+  const allItems = getAllMenuItems();
 
   return (
     <CartProvider>
       <div className="min-h-screen bg-[#F7FAFD] text-slate-900 flex flex-col selection:bg-[#0062C3] selection:text-white">
         <CustomerNavbar />
         <main className="flex-1">
-          <OrderClient
-            initialCategories={categories}
-            initialItems={items}
-            initialPromotions={promotions}
-          />
+          <FavoritesClient allItems={allItems} />
         </main>
         <CustomerFooter />
         <MobileBottomNav />

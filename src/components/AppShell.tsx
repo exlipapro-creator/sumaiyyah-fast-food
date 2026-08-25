@@ -91,7 +91,7 @@ function IconHamburger() {
 }
 
 const navItems = [
-  { href: "/",          label: "Dashboard", testId: "nav-dashboard", Icon: IconDashboard },
+  { href: "/dashboard", label: "Dashboard", testId: "nav-dashboard", Icon: IconDashboard },
   { href: "/pos",       label: "POS",       testId: "nav-pos",       Icon: IconPOS },
   { href: "/orders",    label: "Orders",    testId: "nav-orders",    Icon: IconOrders },
   { href: "/menu",      label: "Menu",      testId: "nav-menu",      Icon: IconMenu,      managerOnly: true },

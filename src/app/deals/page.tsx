@@ -4,28 +4,26 @@ import type { PublicItem } from "@/app/api/public/menu/route";
 import CustomerNavbar from "@/components/customer/CustomerNavbar";
 import CustomerFooter from "@/components/customer/CustomerFooter";
 import MobileBottomNav from "@/components/customer/MobileBottomNav";
-import OrderClient from "./OrderClient";
+import DealsClient from "./DealsClient";
 import { CartProvider } from "@/context/CartContext";
 
 export const dynamic = "force-dynamic";
 
-function getLiveMenu(): {
-  categories: { id: number; name: string }[];
-  items: PublicItem[];
-  promotions: {
-    id: number;
-    code: string;
-    title: string;
-    description: string;
-    discount_type: "percent" | "fixed";
-    discount_value: number;
-    badge: string | null;
-  }[];
-} {
+function getDealsData() {
   const db = getDb();
-  const categories = db
-    .prepare("SELECT id, name FROM categories ORDER BY sort_order ASC, id ASC")
-    .all() as { id: number; name: string }[];
+
+  const promotions = db
+    .prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC")
+    .all() as {
+      id: number;
+      code: string;
+      title: string;
+      description: string;
+      discount_type: "percent" | "fixed";
+      discount_value: number;
+      min_order_tsh: number;
+      badge: string | null;
+    }[];
 
   const rows = db
     .prepare(
@@ -35,8 +33,8 @@ function getLiveMenu(): {
               CASE WHEN mi.track_stock = 1 AND mi.stock_qty <= 0 THEN 0 ELSE 1 END as in_stock
        FROM menu_items mi
        JOIN categories c ON mi.category_id = c.id
-       WHERE mi.deleted = 0 AND mi.active = 1
-       ORDER BY c.sort_order ASC, mi.sort_order ASC, mi.id ASC`
+       WHERE mi.deleted = 0 AND mi.active = 1 AND (mi.is_deal = 1 OR mi.is_featured = 1)
+       ORDER BY mi.is_deal DESC, c.sort_order ASC, mi.sort_order ASC, mi.id ASC`
     )
     .all() as {
       id: number;
@@ -58,7 +56,7 @@ function getLiveMenu(): {
       in_stock: number;
     }[];
 
-  const items: PublicItem[] = rows.map((r) => {
+  const dealItems: PublicItem[] = rows.map((r) => {
     let dietaryTags: string[] = [];
     try {
       if (r.dietary_tags) dietaryTags = JSON.parse(r.dietary_tags);
@@ -93,43 +91,18 @@ function getLiveMenu(): {
     };
   });
 
-  const promotions = db
-    .prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC")
-    .all() as {
-      id: number;
-      code: string;
-      title: string;
-      description: string;
-      discount_type: "percent" | "fixed";
-      discount_value: number;
-      min_order_tsh: number;
-      badge: string | null;
-    }[];
-
-  const availableCategories = categories.filter((c) =>
-    items.some((i) => i.category_id === c.id)
-  );
-
-  return {
-    categories: availableCategories,
-    items,
-    promotions,
-  };
+  return { promotions, dealItems };
 }
 
-export default function OrderLandingPage() {
-  const { categories, items, promotions } = getLiveMenu();
+export default function DealsPage() {
+  const { promotions, dealItems } = getDealsData();
 
   return (
     <CartProvider>
       <div className="min-h-screen bg-[#F7FAFD] text-slate-900 flex flex-col selection:bg-[#0062C3] selection:text-white">
         <CustomerNavbar />
         <main className="flex-1">
-          <OrderClient
-            initialCategories={categories}
-            initialItems={items}
-            initialPromotions={promotions}
-          />
+          <DealsClient promotions={promotions} dealItems={dealItems} />
         </main>
         <CustomerFooter />
         <MobileBottomNav />
