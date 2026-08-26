@@ -65,7 +65,11 @@ describe("Production Deployment & Operational Verification", () => {
   describe("Environment-Aware Seeding & Bootstrap", () => {
     it("production mode does not auto-seed demo accounts or demo promotions into fresh databases", () => {
       // Test isolated database instance in production mode simulation
-      const testDbPath = path.join(process.cwd(), "data", `test_prod_${Date.now()}.db`);
+      const dataDir = path.join(process.cwd(), "data");
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      const testDbPath = path.join(dataDir, `test_prod_${Date.now()}.db`);
       try {
         const testDb = new Database(testDbPath);
         testDb.pragma("journal_mode = WAL");

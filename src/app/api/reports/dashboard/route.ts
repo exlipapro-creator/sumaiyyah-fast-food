@@ -27,7 +27,11 @@ export async function GET(req: NextRequest) {
       "SELECT COALESCE(SUM(amount_tsh), 0) as v FROM supplier_payments WHERE strftime('%Y-%m', paid_on) = ?"
     ).get(yearMonth) as { v: number }).v;
 
-    const profitMonth = revenueToday - supplierMonth;
+    const revenueMonth = (db.prepare(
+      "SELECT COALESCE(SUM(total_tsh), 0) as v FROM orders WHERE strftime('%Y-%m', created_at) = ? AND status = 'completed'"
+    ).get(yearMonth) as { v: number }).v;
+
+    const profitMonth = revenueMonth - supplierMonth;
 
     return NextResponse.json({ revenueToday, platesToday, transactionsToday, supplierMonth, profitMonth });
   } catch (e) {

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "node scripts/start.mjs",
     "lint": "tsc --noEmit",
+    "migrate:postgres": "node scripts/migrate-postgres.mjs",
     "test": "vitest run"
   },
   "dependencies": {
@@ -17,6 +18,7 @@
     "jose": "^6.2.3",
     "lucide-react": "^1.34.0",
     "next": "16.2.9",
+    "pg": "^8.23.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -27,6 +29,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
