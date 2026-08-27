@@ -18,6 +18,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const { addItem, toggleFavorite, isFavorite } = useCart();
   const [quickAdded, setQuickAdded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const isFav = isFavorite(item.id);
   const hasRequiredOptions =
@@ -54,11 +55,12 @@ export default function ProductCard({
       <div>
         {/* Card Image Container */}
         <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden flex items-center justify-center">
-          {item.image_url ? (
+          {item.image_url && !imgError ? (
             <img
               src={item.image_url}
               alt={item.name}
               loading="lazy"
+              onError={() => setImgError(true)}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (

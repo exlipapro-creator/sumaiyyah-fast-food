@@ -20,10 +20,12 @@ export default function ItemCustomizerModal({ item, isOpen, onClose }: ItemCusto
   const [instructions, setInstructions] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
   const [addedAnimation, setAddedAnimation] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   // Initialize options when item changes
   useEffect(() => {
     if (item) {
+      setImgError(false);
       const defaultVariant = item.options?.variants && item.options.variants.length > 0
         ? item.options.variants[0]
         : null;
@@ -95,10 +97,11 @@ export default function ItemCustomizerModal({ item, isOpen, onClose }: ItemCusto
         
         {/* Header Visual & Close Button */}
         <div className="relative h-44 sm:h-52 w-full bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-200">
-          {item.image_url ? (
+          {item.image_url && !imgError ? (
             <img
               src={item.image_url}
               alt={item.name}
+              onError={() => setImgError(true)}
               className="w-full h-full object-cover"
             />
           ) : (
