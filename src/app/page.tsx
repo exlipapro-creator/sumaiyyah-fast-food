@@ -81,18 +81,19 @@ async function getInitialHomeData() {
     };
   });
 
-  const promotions = db
-    .prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC")
-    .all() as {
-      id: number;
-      code: string;
-      title: string;
-      description: string;
-      discount_type: "percent" | "fixed";
-      discount_value: number;
-      min_order_tsh: number;
-      badge: string | null;
-    }[];
+  const settings = (db.prepare("SELECT promotions_enabled FROM restaurant_settings WHERE id = 1").get() || { promotions_enabled: 0 }) as { promotions_enabled: number };
+  const promotions = settings.promotions_enabled === 1
+    ? (db.prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC").all() as {
+        id: number;
+        code: string;
+        title: string;
+        description: string;
+        discount_type: "percent" | "fixed";
+        discount_value: number;
+        min_order_tsh: number;
+        badge: string | null;
+      }[])
+    : [];
 
   const availableCategories = categories.filter((c) =>
     items.some((i) => i.category_id === c.id)

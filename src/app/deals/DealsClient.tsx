@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { PublicItem } from "@/app/api/public/menu/route";
 import ProductCard from "@/components/customer/ProductCard";
 import ItemCustomizerModal from "@/components/customer/ItemCustomizerModal";
+import AdSlot from "@/components/ads/AdSlot";
 import { useCart } from "@/context/CartContext";
 import {
   Sparkles,
@@ -81,88 +82,93 @@ export default function DealsClient({ promotions, dealItems }: DealsClientProps)
           </div>
         )}
 
+        {/* Sponsor Banner Slot */}
+        <AdSlot placement="deals_top" />
+
         {/* ─── Active Voucher Codes ────────────────────────────────────────── */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
-            <Tag className="w-4 h-4 text-[#0062C3]" />
-            <h2 className="text-base sm:text-lg font-bold text-slate-900">Active Discount Vouchers</h2>
-          </div>
+        {promotions && promotions.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
+              <Tag className="w-4 h-4 text-[#0062C3]" />
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">Active Discount Vouchers</h2>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {promotions.map((promo) => {
-              const isApplied = appliedPromo?.code === promo.code;
-              return (
-                <div
-                  key={promo.code}
-                  className={`bg-white border rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-all shadow-2xs ${
-                    isApplied
-                      ? "border-[#0062C3] ring-2 ring-[#0062C3]/20"
-                      : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-[#EBF4FF] flex items-center justify-center text-[#0062C3]">
-                          <Percent className="w-3.5 h-3.5" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {promotions.map((promo) => {
+                const isApplied = appliedPromo?.code === promo.code;
+                return (
+                  <div
+                    key={promo.code}
+                    className={`bg-white border rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-all shadow-2xs ${
+                      isApplied
+                        ? "border-[#0062C3] ring-2 ring-[#0062C3]/20"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-[#EBF4FF] flex items-center justify-center text-[#0062C3]">
+                            <Percent className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="font-mono text-xs sm:text-sm font-black text-slate-900 tracking-wide">
+                            {promo.code}
+                          </span>
                         </div>
-                        <span className="font-mono text-xs sm:text-sm font-black text-slate-900 tracking-wide">
-                          {promo.code}
-                        </span>
-                      </div>
-                      {promo.badge && (
-                        <span className="text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-[#E5002B] text-white">
-                          {promo.badge}
-                        </span>
-                      )}
-                    </div>
-
-                    <h3 className="text-sm font-bold text-slate-900">{promo.title}</h3>
-                    <p className="text-xs text-slate-500 leading-snug">{promo.description}</p>
-                  </div>
-
-                  <div className="space-y-2.5 pt-2.5 border-t border-slate-100">
-                    <div className="text-[11px] text-slate-400 font-medium">
-                      Min. Order: TZS {promo.min_order_tsh.toLocaleString()}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleCopyCode(promo.code)}
-                        className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
-                      >
-                        {copiedCode === promo.code ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-600" />
-                            <span className="text-emerald-600 font-bold">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3 text-slate-400" />
-                            <span>Copy</span>
-                          </>
+                        {promo.badge && (
+                          <span className="text-[9px] uppercase font-black px-2 py-0.5 rounded-full bg-[#E5002B] text-white">
+                            {promo.badge}
+                          </span>
                         )}
-                      </button>
+                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleApplyPromo(promo)}
-                        className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all ${
-                          isApplied
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
-                            : "bg-[#0062C3] hover:bg-[#004B93] text-white shadow-2xs"
-                        }`}
-                      >
-                        {isApplied ? "Applied ✓" : "Apply"}
-                      </button>
+                      <h3 className="text-sm font-bold text-slate-900">{promo.title}</h3>
+                      <p className="text-xs text-slate-500 leading-snug">{promo.description}</p>
+                    </div>
+
+                    <div className="space-y-2.5 pt-2.5 border-t border-slate-100">
+                      <div className="text-[11px] text-slate-400 font-medium">
+                        Min. Order: TZS {promo.min_order_tsh.toLocaleString()}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCode(promo.code)}
+                          className="flex-1 flex items-center justify-center gap-1 py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                          {copiedCode === promo.code ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span className="text-emerald-600 font-bold">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-slate-400" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleApplyPromo(promo)}
+                          className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                            isApplied
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
+                              : "bg-[#0062C3] hover:bg-[#004B93] text-white shadow-2xs"
+                          }`}
+                        >
+                          {isApplied ? "Applied ✓" : "Apply"}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ─── Bundle Combos & Featured Meals (2-col mobile) ──────────────── */}
         <div className="space-y-4 pt-4">

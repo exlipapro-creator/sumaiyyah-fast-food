@@ -89,30 +89,38 @@ export async function GET() {
       };
     });
 
-    const settings = db.prepare("SELECT * FROM restaurant_settings WHERE id = 1").get() || {
-      name: "Sumaiyyah Fast Food",
-      tagline: "Authentic Swahili Street Food, Hot & Fresh",
-      phone: "+255 700 000 000",
-      whatsapp: "255700000000",
-      address: "Kariakoo, Dar es Salaam, Tanzania",
-      opening_hours: "Mon–Sun: 8:00 AM – 11:00 PM",
-      delivery_enabled: 1,
-      delivery_fee_tsh: 2500,
-      min_order_tsh: 5000,
+    const rawSettings = (db.prepare("SELECT * FROM restaurant_settings WHERE id = 1").get() || {}) as Record<string, unknown>;
+    const settings = {
+      name: (rawSettings.name as string) || "Sumaiyyah Fast Food",
+      tagline: (rawSettings.tagline as string) || "Fresh, Hearty Fast Food & Char-Grill, Hot to Your Door",
+      phone: (rawSettings.phone as string) || "+255 700 000 000",
+      whatsapp: (rawSettings.whatsapp as string) || "255700000000",
+      address: (rawSettings.address as string) || "Kariakoo, Dar es Salaam, Tanzania",
+      opening_hours: (rawSettings.opening_hours as string) || "Mon–Sun: 8:00 AM – 11:00 PM",
+      delivery_enabled: rawSettings.delivery_enabled === 0 ? 0 : 1,
+      delivery_fee_tsh: (rawSettings.delivery_fee_tsh as number) || 2500,
+      min_order_tsh: (rawSettings.min_order_tsh as number) || 5000,
+      promotions_enabled: rawSettings.promotions_enabled === 1 ? 1 : 0,
+      adsense_enabled: rawSettings.adsense_enabled === 1 ? 1 : 0,
+      adsense_client_id: (rawSettings.adsense_client_id as string) || "",
+      adsense_slot_top: (rawSettings.adsense_slot_top as string) || "",
+      adsense_slot_infeed: (rawSettings.adsense_slot_infeed as string) || "",
+      adsense_slot_sidebar: (rawSettings.adsense_slot_sidebar as string) || "",
+      direct_ads_enabled: rawSettings.direct_ads_enabled === 0 ? 0 : 1,
     };
 
-    const promotions = db
-      .prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC")
-      .all() as {
-        id: number;
-        code: string;
-        title: string;
-        description: string;
-        discount_type: "percent" | "fixed";
-        discount_value: number;
-        min_order_tsh: number;
-        badge: string | null;
-      }[];
+    const promotions = settings.promotions_enabled === 1
+      ? (db.prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC").all() as {
+          id: number;
+          code: string;
+          title: string;
+          description: string;
+          discount_type: "percent" | "fixed";
+          discount_value: number;
+          min_order_tsh: number;
+          badge: string | null;
+        }[])
+      : [];
 
     // Only surface categories that currently have at least one available item so
     // the customer never sees an empty tab.

@@ -167,12 +167,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Process promotion code
+    // Process promotion code if promotions are globally enabled
     let discountType: "none" | "percent" | "fixed" = "none";
     let discountValue = 0;
     let discountAmount = 0;
 
-    if (promo_code && typeof promo_code === "string") {
+    const promoSetting = db.prepare("SELECT promotions_enabled FROM restaurant_settings WHERE id = 1").get() as { promotions_enabled?: number } | undefined;
+    const promotionsEnabled = promoSetting?.promotions_enabled === 1;
+
+    if (promotionsEnabled && promo_code && typeof promo_code === "string") {
       const cleanCode = promo_code.trim().toUpperCase();
       const promo = db.prepare(
         "SELECT * FROM promotions WHERE code = ? AND active = 1"

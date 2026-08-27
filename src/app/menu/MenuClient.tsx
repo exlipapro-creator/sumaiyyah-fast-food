@@ -338,7 +338,7 @@ export default function MenuClient({
                 value={catName}
                 onChange={e => setCatName(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-                placeholder="e.g. Burgers"
+                placeholder="e.g. Rice & Mains"
                 autoFocus
               />
             </div>
@@ -375,7 +375,7 @@ export default function MenuClient({
                 value={itemName}
                 onChange={e => setItemName(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-                placeholder="e.g. Classic Burger"
+                placeholder="e.g. Pilau Nyama"
                 autoFocus
               />
             </div>

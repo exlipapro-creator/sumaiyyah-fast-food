@@ -173,12 +173,13 @@ describe("Production Deployment & Operational Verification", () => {
   describe("Complete Restaurant Operational Flows", () => {
     it("POS Flow: Order creation, stock deduction, voiding and stock restoration", async () => {
       // 1. Create a tracked item
+      const cat = db.prepare("SELECT id FROM categories LIMIT 1").get() as { id: number };
       const createItemRes = await fetch(`${BASE}/api/menu-items`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Cookie: managerCookie },
         body: JSON.stringify({
-          category_id: 1,
-          name: `Operational Test Burger ${Date.now()}`,
+          category_id: cat.id,
+          name: `Operational Test Item ${Date.now()}`,
           price_tsh: 10000,
           track_stock: 1,
           stock_qty: 20,
@@ -205,7 +206,10 @@ describe("Production Deployment & Operational Verification", () => {
       expect(posOrderData.order.total_tsh).toBe(30000);
 
       // 3. Verify stock was depleted to 17
-      const itemCheck1 = db.prepare("SELECT stock_qty FROM menu_items WHERE id = ?").get(createdItem.id) as { stock_qty: number };
+      const itemCheck1Res = await fetch(`${BASE}/api/menu-items`, { headers: { Cookie: managerCookie } });
+      const itemCheck1Data = await itemCheck1Res.json();
+      const itemCheck1 = itemCheck1Data.items.find((i: any) => i.id === createdItem.id);
+      expect(itemCheck1).toBeDefined();
       expect(itemCheck1.stock_qty).toBe(17);
 
       // 4. Void order with reason and verify stock restored to 20
@@ -219,7 +223,10 @@ describe("Production Deployment & Operational Verification", () => {
       });
       expect(voidRes.ok).toBe(true);
 
-      const itemCheck2 = db.prepare("SELECT stock_qty FROM menu_items WHERE id = ?").get(createdItem.id) as { stock_qty: number };
+      const itemCheck2Res = await fetch(`${BASE}/api/menu-items`, { headers: { Cookie: managerCookie } });
+      const itemCheck2Data = await itemCheck2Res.json();
+      const itemCheck2 = itemCheck2Data.items.find((i: any) => i.id === createdItem.id);
+      expect(itemCheck2).toBeDefined();
       expect(itemCheck2.stock_qty).toBe(20);
     });
 

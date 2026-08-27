@@ -115,7 +115,7 @@ describe("Orders", () => {
     // Get active items
     const itemRes = await fetch(`${BASE}/api/menu-items?activeOnly=1`, { headers: { Cookie: cashierCookie } });
     const itemData = await itemRes.json();
-    const item = itemData.items[0];
+    const item = itemData.items.find((i: any) => !i.track_stock || i.stock_qty >= 5) || itemData.items[0];
 
     const res = await fetch(`${BASE}/api/orders`, {
       method: "POST",
@@ -201,7 +201,7 @@ describe("Order Void", () => {
   async function createOrder(cookie: string) {
     const itemRes = await fetch(`${BASE}/api/menu-items?activeOnly=1`, { headers: { Cookie: cookie } });
     const itemData = await itemRes.json();
-    const item = itemData.items[0];
+    const item = itemData.items.find((i: any) => !i.track_stock || i.stock_qty >= 5) || itemData.items[0];
     const res = await fetch(`${BASE}/api/orders`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Cookie: cookie },

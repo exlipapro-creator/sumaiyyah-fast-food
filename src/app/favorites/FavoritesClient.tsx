@@ -37,7 +37,7 @@ export default function FavoritesClient({ allItems }: FavoritesClientProps) {
           Saved Favorite Dishes ({favoriteItems.length})
         </h1>
         <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-          Quickly re-order your favorite burgers, seasoned wings, and side combos with one tap.
+          Quickly re-order your favorite dishes, sides, and refreshing drinks with one tap.
         </p>
       </div>
 
@@ -49,7 +49,7 @@ export default function FavoritesClient({ allItems }: FavoritesClientProps) {
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-slate-900">No favorites saved yet</h2>
             <p className="text-slate-500 text-xs leading-relaxed">
-              Tap the heart icon on any burger, side, or beverage while browsing to save it here for fast re-ordering.
+              Tap the heart icon on any meal, side, or beverage while browsing to save it here for fast re-ordering.
             </p>
           </div>
           <Link

@@ -17,5 +17,6 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.{ts,tsx}"],
     exclude: ["node_modules", ".next"],
+    fileParallelism: false,
   },
 });

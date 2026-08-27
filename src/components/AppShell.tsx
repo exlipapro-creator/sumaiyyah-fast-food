@@ -74,6 +74,14 @@ function IconAudit() {
     </svg>
   );
 }
+function IconMarketing() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+        d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+    </svg>
+  );
+}
 function IconLogout() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +90,7 @@ function IconLogout() {
     </svg>
   );
 }
-function IconHamburger() {
+function IconMenuBars() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -95,6 +103,7 @@ const navItems = [
   { href: "/pos",       label: "POS",       testId: "nav-pos",       Icon: IconPOS },
   { href: "/orders",    label: "Orders",    testId: "nav-orders",    Icon: IconOrders },
   { href: "/menu",      label: "Menu",      testId: "nav-menu",      Icon: IconMenu,      managerOnly: true },
+  { href: "/marketing", label: "Marketing & Ads", testId: "nav-marketing", Icon: IconMarketing, managerOnly: true },
   { href: "/reports",   label: "Reports",   testId: "nav-reports",   Icon: IconReports,   managerOnly: true },
   { href: "/suppliers", label: "Suppliers", testId: "nav-suppliers", Icon: IconSuppliers, managerOnly: true },
   { href: "/users",     label: "Users",     testId: "nav-users",     Icon: IconUsers,     managerOnly: true },
@@ -126,20 +135,27 @@ export default function AppShell({ children, user }: AppShellProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-30 w-60 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-200 ${
+        className={`fixed inset-y-0 left-0 z-30 w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-200 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 lg:static lg:flex`}
       >
-        {/* Brand */}
-        <div className="px-5 py-5 border-b border-slate-800">
-          <span data-testid="brand-name" className="text-amber-500 font-bold text-xs tracking-widest uppercase leading-tight block">
-            SUMAIYYAH<br />FAST FOOD
-          </span>
-          <span className="text-slate-500 text-xs mt-1 block">Point of Sale</span>
+        {/* Brand Header */}
+        <div className="px-5 py-5 border-b border-slate-800 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0062C3] via-[#004B93] to-amber-500 p-0.5 shadow-xs shrink-0">
+            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+              <span className="text-amber-400 font-black text-sm">S</span>
+            </div>
+          </div>
+          <div>
+            <span data-testid="brand-name" className="text-amber-400 font-bold text-xs tracking-widest uppercase leading-tight block">
+              SUMAIYYAH<br />FAST FOOD
+            </span>
+            <span className="text-slate-400 text-[11px] font-medium block mt-0.5">Staff & Kitchen Portal</span>
+          </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        {/* Nav Links */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {visibleNav.map(({ href, label, testId, Icon }) => {
             const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
             return (
@@ -148,16 +164,16 @@ export default function AppShell({ children, user }: AppShellProps) {
                 href={href}
                 data-testid={testId}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   isActive
-                    ? "bg-slate-800 text-amber-500"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                    ? "bg-[#0062C3] text-white shadow-sm font-bold"
+                    : "text-slate-400 hover:bg-slate-800/80 hover:text-slate-100"
                 }`}
               >
-                <span className={isActive ? "text-amber-500" : "text-slate-500"}>
+                <span className={isActive ? "text-white" : "text-slate-400"}>
                   <Icon />
                 </span>
-                {label}
+                <span>{label}</span>
               </Link>
             );
           })}
@@ -165,17 +181,20 @@ export default function AppShell({ children, user }: AppShellProps) {
 
         {/* User + logout */}
         <div className="px-4 py-4 border-t border-slate-800 space-y-2">
-          <div data-testid="current-user" className="px-3 py-2">
-            <div className="text-slate-100 text-sm font-medium truncate">{user.name}</div>
-            <div className="text-slate-500 text-xs capitalize mt-0.5">{user.role}</div>
+          <div data-testid="current-user" className="px-3.5 py-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+            <div className="text-slate-100 text-sm font-semibold truncate">{user.name}</div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span className="text-amber-400 text-xs font-mono uppercase font-bold tracking-wider">{user.role}</span>
+            </div>
           </div>
           <button
             data-testid="logout-button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-rose-400 transition-colors"
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
           >
             <IconLogout />
-            Sign out
+            <span>Sign out</span>
           </button>
         </div>
       </aside>
@@ -190,7 +209,7 @@ export default function AppShell({ children, user }: AppShellProps) {
             className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 transition-colors"
             aria-label="Toggle navigation"
           >
-            <IconHamburger />
+            <IconMenuBars />
           </button>
           <span className="text-amber-500 font-bold text-xs tracking-widest uppercase">SUMAIYYAH FAST FOOD</span>
         </header>

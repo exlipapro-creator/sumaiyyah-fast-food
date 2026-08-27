@@ -86,9 +86,9 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
             <ShoppingBag className="w-10 h-10" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-slate-900">Your Cart is Empty</h1>
+            <h1 className="text-2xl font-bold text-slate-900 font-serif">Kikapu Chako Kiko Wazi</h1>
             <p className="text-slate-500 text-sm leading-relaxed">
-              Looks like you haven&apos;t added any juicy burgers, wings, or drinks yet.
+              Bado hujaongeza baga tamu, mishikaki, chipsi kavu, wala kinywaji chochote kwenye kikapu.
             </p>
           </div>
           <Link
@@ -96,7 +96,7 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
             className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-6 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95"
           >
             <CookingPot className="w-4 h-4" />
-            <span>Explore Menu & Order</span>
+            <span>Angalia Orodha & Agiza</span>
           </Link>
         </div>
       </div>
@@ -110,10 +110,10 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-serif">
-            Review Your Order ({items.reduce((s, i) => s + i.quantity, 0)} items)
+            Kagua Oda Yako (Vipengele {items.reduce((s, i) => s + i.quantity, 0)})
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-            Check your food items, select fulfillment, and apply discount vouchers.
+            Hakikisha milo yako, chagua namna ya kupokea, na tumia kuponi ya punguzo.
           </p>
         </div>
         <button
@@ -122,7 +122,7 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
           className="text-xs text-rose-600 hover:text-rose-700 font-semibold self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-100 rounded-lg transition-colors"
         >
           <Trash2 className="w-3.5 h-3.5" />
-          <span>Clear All Items</span>
+          <span>Futa Vyote</span>
         </button>
       </div>
 
@@ -134,26 +134,26 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
           {/* Fulfillment Type Selection */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3 shadow-sm">
             <h2 className="text-xs uppercase font-bold tracking-wider text-slate-700">
-              Select Dining / Fulfillment Option
+              Namna ya Kupokea Chakula
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 {
                   id: "delivery",
-                  label: "Express Delivery",
-                  sub: "TZS 2,500 • 30-45 mins",
+                  label: "Lete Mlangoni (Delivery)",
+                  sub: "TZS 2,500 • Dak 25-40",
                   icon: Truck,
                 },
                 {
                   id: "pickup",
-                  label: "Takeaway / Pickup",
-                  sub: "Free • Ready in 15 mins",
+                  label: "Kuja Kuchukua (Takeaway)",
+                  sub: "Bure • Tayari dak 15",
                   icon: Store,
                 },
                 {
                   id: "dine_in",
-                  label: "Dine-In",
-                  sub: "Free • Served at table",
+                  label: "Kula Hapa (Dine-In)",
+                  sub: "Bure • Mezani",
                   icon: Utensils,
                 },
               ].map((opt) => {
@@ -203,24 +203,24 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
                     
                     {item.variant && (
                       <div className="text-xs text-[#0062C3] font-semibold">
-                        Portion: {item.variant}
+                        Kipimo: {item.variant}
                       </div>
                     )}
 
                     {item.addons && item.addons.length > 0 && (
                       <div className="text-xs text-slate-500">
-                        Add-ons: {item.addons.map((a) => a.name).join(", ")}
+                        Viongezeo: {item.addons.map((a) => a.name).join(", ")}
                       </div>
                     )}
 
                     {item.instructions && (
                       <div className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded italic">
-                        Note: &ldquo;{item.instructions}&rdquo;
+                        Maelekezo: &ldquo;{item.instructions}&rdquo;
                       </div>
                     )}
 
                     <div className="text-xs font-mono text-slate-500 pt-0.5">
-                      TZS {item.unit_price_tsh.toLocaleString()} each
+                      TZS {item.unit_price_tsh.toLocaleString()} kila moja
                     </div>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
                       type="button"
                       onClick={() => updateQuantity(item.cartId, item.quantity - 1)}
                       className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                      aria-label="Decrease quantity"
+                      aria-label="Punguza idadi"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
@@ -243,7 +243,7 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
                       type="button"
                       onClick={() => updateQuantity(item.cartId, item.quantity + 1)}
                       className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
-                      aria-label="Increase quantity"
+                      aria-label="Ongeza idadi"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -258,7 +258,7 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
                       onClick={() => removeItem(item.cartId)}
                       className="text-[10px] text-slate-400 hover:text-rose-600 underline transition-colors"
                     >
-                      Remove
+                      Ondoa
                     </button>
                   </div>
                 </div>
@@ -272,7 +272,7 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
               href="/order"
               className="inline-flex items-center gap-2 text-xs font-bold text-[#0062C3] hover:text-[#004B93] transition-colors"
             >
-              <span>+ Add more dishes to order</span>
+              <span>+ Ongeza milo mingine kwenye oda</span>
             </Link>
           </div>
         </div>
@@ -280,114 +280,116 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
         {/* Right Col: Promo Vouchers & Grand Summary */}
         <div className="lg:col-span-4 space-y-6">
           
-          {/* Promo Code Input Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-[#0062C3]" />
-              <h2 className="text-xs uppercase font-bold tracking-wider text-slate-700">
-                Promo Code Voucher
-              </h2>
-            </div>
+          {/* Promo Code Input Card (Only shown if promotions are configured/available or promo already applied) */}
+          {(availablePromotions.length > 0 || appliedPromo) && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-[#0062C3]" />
+                <h2 className="text-xs uppercase font-bold tracking-wider text-slate-700">
+                  Kuponi ya Punguzo (Promo Code)
+                </h2>
+              </div>
 
-            {appliedPromo ? (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <div>
-                    <div className="text-xs font-bold text-emerald-800">
-                      Code {appliedPromo.code} Applied!
-                    </div>
-                    <div className="text-[11px] text-emerald-600">
-                      Savings: TZS {discountAmount.toLocaleString()}
+              {appliedPromo ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div>
+                      <div className="text-xs font-bold text-emerald-800">
+                        Kuponi {appliedPromo.code} Imekubaliwa!
+                      </div>
+                      <div className="text-[11px] text-emerald-600">
+                        Umeokoa: TZS {discountAmount.toLocaleString()}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={removePromo}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 bg-white"
-                  aria-label="Remove promo"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleApplyCustomPromo} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={promoInput}
-                    onChange={(e) => setPromoInput(e.target.value)}
-                    placeholder="Enter code (e.g. KARIBU10)"
-                    className="flex-1 bg-slate-50 border border-slate-200 focus:border-[#0062C3] rounded-xl px-3.5 py-2 text-xs uppercase font-mono text-slate-900 placeholder-slate-400 focus:outline-none"
-                  />
                   <button
-                    type="submit"
-                    className="px-3.5 py-2 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
+                    type="button"
+                    onClick={removePromo}
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 bg-white"
+                    aria-label="Ondoa kuponi"
                   >
-                    Apply
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                {promoError && (
-                  <p className="text-[11px] text-rose-600 leading-tight">{promoError}</p>
-                )}
-                {promoSuccess && (
-                  <p className="text-[11px] text-emerald-600 leading-tight">{promoSuccess}</p>
-                )}
-              </form>
-            )}
-
-            {/* Quick suggested promos */}
-            {!appliedPromo && availablePromotions.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  Available Offers
-                </span>
-                <div className="space-y-1.5">
-                  {availablePromotions.slice(0, 2).map((p) => (
+              ) : (
+                <form onSubmit={handleApplyCustomPromo} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={promoInput}
+                      onChange={(e) => setPromoInput(e.target.value)}
+                      placeholder="Weka kuponi ya punguzo"
+                      className="flex-1 bg-slate-50 border border-slate-200 focus:border-[#0062C3] rounded-xl px-3.5 py-2 text-xs uppercase font-mono text-slate-900 placeholder-slate-400 focus:outline-none"
+                    />
                     <button
-                      key={p.code}
-                      type="button"
-                      onClick={() => applyPromo(p)}
-                      className="w-full text-left p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between text-xs transition-colors"
+                      type="submit"
+                      className="px-3.5 py-2 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
                     >
-                      <span className="font-mono font-bold text-[#0062C3]">{p.code}</span>
-                      <span className="text-slate-500 text-[11px] truncate max-w-[150px]">{p.title}</span>
+                      Tumia
                     </button>
-                  ))}
+                  </div>
+                  {promoError && (
+                    <p className="text-[11px] text-rose-600 leading-tight">{promoError}</p>
+                  )}
+                  {promoSuccess && (
+                    <p className="text-[11px] text-emerald-600 leading-tight">{promoSuccess}</p>
+                  )}
+                </form>
+              )}
+
+              {/* Quick suggested promos */}
+              {!appliedPromo && availablePromotions.length > 0 && (
+                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    Kuponi Zinazopatikana
+                  </span>
+                  <div className="space-y-1.5">
+                    {availablePromotions.slice(0, 2).map((p) => (
+                      <button
+                        key={p.code}
+                        type="button"
+                        onClick={() => applyPromo(p)}
+                        className="w-full text-left p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between text-xs transition-colors"
+                      >
+                        <span className="font-mono font-bold text-[#0062C3]">{p.code}</span>
+                        <span className="text-slate-500 text-[11px] truncate max-w-[150px]">{p.title}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Order Summary & Final Checkout Button */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
             <h2 className="text-xs uppercase font-bold tracking-wider text-slate-700">
-              Payment Summary
+              Muhtasari wa Malipo
             </h2>
 
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center justify-between text-slate-600">
-                <span>Items Subtotal</span>
+                <span>Jumla ya Milo</span>
                 <span className="font-mono font-semibold text-slate-900">TZS {subtotal.toLocaleString()}</span>
               </div>
 
               {discountAmount > 0 && (
                 <div className="flex items-center justify-between text-emerald-600 font-semibold">
-                  <span>Promo Discount ({appliedPromo?.code})</span>
+                  <span>Punguzo la Kuponi ({appliedPromo?.code})</span>
                   <span className="font-mono">- TZS {discountAmount.toLocaleString()}</span>
                 </div>
               )}
 
               <div className="flex items-center justify-between text-slate-600">
-                <span>Fulfillment ({fulfillmentType === "delivery" ? "Delivery Fee" : "Takeaway / Dine-in"})</span>
+                <span>Usafirishaji ({fulfillmentType === "delivery" ? "Gharama ya Usafiri" : "Kujichukulia / Kula Hapa"})</span>
                 <span className="font-mono font-semibold text-slate-900">
-                  {deliveryFee > 0 ? `TZS ${deliveryFee.toLocaleString()}` : "FREE"}
+                  {deliveryFee > 0 ? `TZS ${deliveryFee.toLocaleString()}` : "BURE"}
                 </span>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-base font-bold text-slate-900">
-                <span>Grand Total</span>
+                <span>Jumla Kuu</span>
                 <span className="font-mono text-[#004B93] text-lg font-black">
                   TZS {grandTotal.toLocaleString()}
                 </span>
@@ -398,12 +400,12 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
               href="/checkout"
               className="w-full inline-flex items-center justify-center gap-2 py-4 px-6 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95"
             >
-              <span>Proceed to Checkout</span>
+              <span>Endelea na Malipo</span>
               <ArrowRight className="w-4 h-4 stroke-[3]" />
             </Link>
 
             <div className="text-[11px] text-center text-slate-400">
-              🔒 Instant order submission & live kitchen tracking
+              🔒 Oda yako inatumwa moja kwa moja jikoni & utafuatilia hatua kwa hatua
             </div>
           </div>
 

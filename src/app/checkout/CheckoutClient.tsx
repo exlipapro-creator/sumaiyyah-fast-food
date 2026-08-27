@@ -65,19 +65,18 @@ export default function CheckoutClient({ settings }: CheckoutClientProps) {
   const [error, setError] = useState<string | null>(null);
 
   const darAreas = [
-    "Kariakoo",
-    "Posta / CBD",
-    "Kinondoni",
-    "Sinza",
-    "Mikocheni",
-    "Masaki / Oysterbay",
-    "Mwenge",
-    "Mlimani / Survey",
-    "Mwananyamala",
-    "Ilala",
-    "Magomeni",
-    "Upanga",
-    "Other Dar Area",
+    "Kariakoo (10-15 mins)",
+    "Posta / CBD (12-18 mins)",
+    "Upanga (Mashariki & Magharibi) (15-20 mins)",
+    "Ilala (Boma & Karume) (18-25 mins)",
+    "Magomeni (Mapipa & Kagera) (20-30 mins)",
+    "Kisutu & Gerezani (10-15 mins)",
+    "Kivukoni & Ferry (15-22 mins)",
+    "Muhimbili / Jangwani (15-22 mins)",
+    "Kinondoni & Hananasif (25-35 mins)",
+    "Sinza & Mwenge (35-45 mins)",
+    "Mikocheni & Masaki (35-45 mins)",
+    "Other Dar es Salaam Area",
   ];
 
   if (items.length === 0) {
@@ -89,7 +88,7 @@ export default function CheckoutClient({ settings }: CheckoutClientProps) {
           </div>
           <h1 className="text-xl font-bold text-slate-900">Your cart is empty</h1>
           <p className="text-slate-500 text-xs sm:text-sm">
-            Please add delicious burgers or meal combos to your cart before proceeding to checkout.
+            Please add your favorite meals or drinks to your cart before proceeding to checkout.
           </p>
           <Link
             href="/order"
@@ -426,7 +425,7 @@ export default function CheckoutClient({ settings }: CheckoutClientProps) {
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Please ring the doorbell, extra napkins, cut burgers in half..."
+                placeholder="e.g. Please ring the doorbell, extra napkins, extra chilli on the side..."
                 rows={2}
                 maxLength={250}
                 className="w-full bg-slate-50 border border-slate-200 focus:border-[#0062C3] rounded-xl p-3 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none resize-none"

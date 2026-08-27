@@ -135,7 +135,7 @@ function initSchema(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS restaurant_settings (
       id INTEGER PRIMARY KEY DEFAULT 1,
       name TEXT NOT NULL DEFAULT 'Sumaiyyah Fast Food',
-      tagline TEXT NOT NULL DEFAULT 'Authentic Swahili Street Food, Hot & Fresh',
+      tagline TEXT NOT NULL DEFAULT 'Fresh, Hearty Fast Food & Char-Grill, Hot to Your Door',
       phone TEXT NOT NULL DEFAULT '+255 700 000 000',
       whatsapp TEXT NOT NULL DEFAULT '255700000000',
       address TEXT NOT NULL DEFAULT 'Kariakoo, Dar es Salaam, Tanzania',
@@ -315,6 +315,43 @@ function initSchema(db: Database.Database) {
       recorded_by INTEGER REFERENCES users(id),
       notes TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS ad_placements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slot_key TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      dimensions TEXT NOT NULL,
+      location_description TEXT,
+      daily_price_tsh INTEGER NOT NULL DEFAULT 15000,
+      weekly_price_tsh INTEGER NOT NULL DEFAULT 85000,
+      monthly_price_tsh INTEGER NOT NULL DEFAULT 300000,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS ad_campaigns (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      placement_key TEXT NOT NULL REFERENCES ad_placements(slot_key),
+      sponsor_name TEXT NOT NULL,
+      sponsor_email TEXT NOT NULL,
+      sponsor_phone TEXT NOT NULL,
+      banner_image_url TEXT NOT NULL,
+      destination_url TEXT NOT NULL,
+      alt_text TEXT NOT NULL DEFAULT 'Sponsored Partner',
+      status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','ACTIVE','PAUSED','REJECTED','EXPIRED')),
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      amount_paid_tsh INTEGER NOT NULL DEFAULT 0,
+      payment_status TEXT NOT NULL DEFAULT 'UNPAID' CHECK(payment_status IN ('UNPAID','PAID','REFUNDED')),
+      payment_reference TEXT,
+      impressions_count INTEGER NOT NULL DEFAULT 0,
+      clicks_count INTEGER NOT NULL DEFAULT 0,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_ad_campaigns_status ON ad_campaigns(status);
+    CREATE INDEX IF NOT EXISTS idx_ad_campaigns_placement ON ad_campaigns(placement_key);
   `);
 
   // Migrate existing databases that predate later columns/tables.
@@ -493,8 +530,32 @@ function initSchema(db: Database.Database) {
     db.exec("ALTER TABLE order_items ADD COLUMN notes TEXT");
   }
 
+  const settingsCols = db.prepare("PRAGMA table_info(restaurant_settings)").all() as { name: string }[];
+  if (!settingsCols.some((c) => c.name === "promotions_enabled")) {
+    db.exec("ALTER TABLE restaurant_settings ADD COLUMN promotions_enabled INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!settingsCols.some((c) => c.name === "adsense_enabled")) {
+    db.exec("ALTER TABLE restaurant_settings ADD COLUMN adsense_enabled INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!settingsCols.some((c) => c.name === "adsense_client_id")) {
+    db.exec("ALTER TABLE restaurant_settings ADD COLUMN adsense_client_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!settingsCols.some((c) => c.name === "adsense_slot_top")) {
+    db.exec("ALTER TABLE restaurant_settings ADD COLUMN adsense_slot_top TEXT NOT NULL DEFAULT ''");
+  }
+  if (!settingsCols.some((c) => c.name === "adsense_slot_infeed")) {
+    db.exec("ALTER TABLE restaurant_settings ADD COLUMN adsense_slot_infeed TEXT NOT NULL DEFAULT ''");
+  }
+  if (!settingsCols.some((c) => c.name === "adsense_slot_sidebar")) {
+    db.exec("ALTER TABLE restaurant_settings ADD COLUMN adsense_slot_sidebar TEXT NOT NULL DEFAULT ''");
+  }
+  if (!settingsCols.some((c) => c.name === "direct_ads_enabled")) {
+    db.exec("ALTER TABLE restaurant_settings ADD COLUMN direct_ads_enabled INTEGER NOT NULL DEFAULT 1");
+  }
+
   seed(db);
   seedSettingsAndPromos(db);
+  seedAdPlacements(db);
   enrichMenuItems(db);
   seedCorporateData(db);
 }
@@ -507,52 +568,65 @@ function seedSettingsAndPromos(db: Database.Database) {
   const settingsCount = db.prepare("SELECT COUNT(*) as n FROM restaurant_settings").get() as { n: number };
   if (settingsCount.n === 0) {
     db.prepare(`
-      INSERT INTO restaurant_settings (id, name, tagline, phone, whatsapp, address, opening_hours, delivery_enabled, delivery_fee_tsh, min_order_tsh)
-      VALUES (1, 'Sumaiyyah Fast Food', 'Authentic Swahili Street Food, Hot & Fresh', '+255 700 000 000', '255700000000', 'Kariakoo, Dar es Salaam, Tanzania', 'Mon–Sun: 8:00 AM – 11:00 PM', 1, 2500, 5000)
+      INSERT INTO restaurant_settings (id, name, tagline, phone, whatsapp, address, opening_hours, delivery_enabled, delivery_fee_tsh, min_order_tsh, promotions_enabled, adsense_enabled, direct_ads_enabled)
+      VALUES (1, 'Sumaiyyah Fast Food', 'Fresh, Hearty Fast Food & Char-Grill, Hot to Your Door', '+255 700 000 000', '255700000000', 'Kariakoo, Dar es Salaam, Tanzania', 'Mon–Sun: 8:00 AM – 11:00 PM', 1, 2500, 5000, 0, 0, 1)
     `).run();
   }
 
-  // In production, promotions are managed exclusively by authorized managers; do not auto-seed demo vouchers.
-  if (isProduction()) {
-    return;
-  }
+  // Deactivate any legacy mock promo codes so the public app starts with 0 active mock promotions.
+  // Promotions are disabled by default until manager configures and toggles promotions on.
+  db.exec("UPDATE promotions SET active = 0 WHERE active = 1");
+}
 
-  const promoCount = db.prepare("SELECT COUNT(*) as n FROM promotions").get() as { n: number };
-  if (promoCount.n === 0) {
-    const defaultPromos = [
+function seedAdPlacements(db: Database.Database) {
+  const count = db.prepare("SELECT COUNT(*) as n FROM ad_placements").get() as { n: number };
+  if (count.n === 0) {
+    const placements = [
       {
-        code: "KARIBU10",
-        title: "Karibu Welcome Discount",
-        description: "Get 10% off your first online order",
-        discount_type: "percent",
-        discount_value: 10,
-        min_order_tsh: 10000,
-        badge: "10% OFF",
+        slot_key: "home_hero_top",
+        name: "Home Header Leaderboard Banner",
+        dimensions: "728x90 (Desktop) / 320x50 (Mobile)",
+        location_description: "Prominent top placement right above customer culinary categories",
+        daily_price_tsh: 20000,
+        weekly_price_tsh: 120000,
+        monthly_price_tsh: 450000,
       },
       {
-        code: "BONGO5K",
-        title: "Dar City Feast Deal",
-        description: "Save TZS 5,000 on family orders over TZS 30,000",
-        discount_type: "fixed",
-        discount_value: 5000,
-        min_order_tsh: 30000,
-        badge: "TZS 5,000 OFF",
+        slot_key: "menu_infeed",
+        name: "Menu In-Feed Native Card",
+        dimensions: "Responsive Native Card / 300x250",
+        location_description: "Seamlessly integrated between menu categories on active order screen",
+        daily_price_tsh: 15000,
+        weekly_price_tsh: 90000,
+        monthly_price_tsh: 320000,
       },
       {
-        code: "SUMAIYYAHVIP",
-        title: "VIP Weekend Crave",
-        description: "Enjoy 15% discount on all burger and combo platters",
-        discount_type: "percent",
-        discount_value: 15,
-        min_order_tsh: 20000,
-        badge: "VIP 15%",
+        slot_key: "order_confirmation",
+        name: "Order Tracking Live Screen Banner",
+        dimensions: "Fluid 728x90 / 468x60 Banner",
+        location_description: "High dwell-time slot viewed by customers tracking live food prep and rider dispatch",
+        daily_price_tsh: 18000,
+        weekly_price_tsh: 100000,
+        monthly_price_tsh: 380000,
+      },
+      {
+        slot_key: "deals_top",
+        name: "Deals & Combos Showcase Banner",
+        dimensions: "728x90 / Responsive",
+        location_description: "Displayed atop the deals and value combos page",
+        daily_price_tsh: 12000,
+        weekly_price_tsh: 70000,
+        monthly_price_tsh: 250000,
       },
     ];
-    for (const p of defaultPromos) {
-      db.prepare(`
-        INSERT OR IGNORE INTO promotions (code, title, description, discount_type, discount_value, min_order_tsh, badge, active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-      `).run(p.code, p.title, p.description, p.discount_type, p.discount_value, p.min_order_tsh, p.badge);
+
+    const insert = db.prepare(`
+      INSERT OR IGNORE INTO ad_placements (slot_key, name, dimensions, location_description, daily_price_tsh, weekly_price_tsh, monthly_price_tsh, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+    `);
+
+    for (const p of placements) {
+      insert.run(p.slot_key, p.name, p.dimensions, p.location_description, p.daily_price_tsh, p.weekly_price_tsh, p.monthly_price_tsh);
     }
   }
 }
@@ -802,40 +876,595 @@ function enrichMenuItems(db: Database.Database) {
   }
 }
 
-function seedMenuCategoriesAndItems(db: Database.Database) {
-  const existingCats = db.prepare("SELECT COUNT(*) as n FROM categories").get() as { n: number };
-  if (existingCats.n > 0) return;
-
-  const cats = [
-    { name: "Burgers", sort_order: 1 },
-    { name: "Sides", sort_order: 2 },
-    { name: "Drinks", sort_order: 3 },
-    { name: "Specials", sort_order: 4 },
+function syncSwahiliMenu(db: Database.Database) {
+  // Ensure the 4 primary Swahili categories exist
+  const requiredCategories = [
+    { name: "Milo Mikuu (Rice, Pilau & Ugali)", sort_order: 1 },
+    { name: "Chipsi & Mshikaki (Chips & Grill)", sort_order: 2 },
+    { name: "Vinywaji Baridi (Sodas & Water)", sort_order: 3 },
+    { name: "Juisi & Matunda (Fresh Juices & Fruits)", sort_order: 4 },
   ];
-  const catIds: number[] = [];
-  for (const cat of cats) {
-    const r = db.prepare("INSERT INTO categories (name, sort_order) VALUES (?, ?)").run(cat.name, cat.sort_order);
-    catIds.push(r.lastInsertRowid as number);
+
+  for (const cat of requiredCategories) {
+    const existing = db.prepare("SELECT id FROM categories WHERE name = ?").get(cat.name) as { id: number } | undefined;
+    if (!existing) {
+      db.prepare("INSERT INTO categories (name, sort_order) VALUES (?, ?)").run(cat.name, cat.sort_order);
+    } else {
+      db.prepare("UPDATE categories SET sort_order = ? WHERE id = ?").run(cat.sort_order, existing.id);
+    }
   }
 
-  const items = [
-    { category_id: catIds[0], name: "Classic Burger", price_tsh: 8500, sort_order: 1 },
-    { category_id: catIds[0], name: "Spicy Chicken Burger", price_tsh: 9500, sort_order: 2 },
-    { category_id: catIds[0], name: "Double Beef Burger", price_tsh: 12000, sort_order: 3 },
-    { category_id: catIds[1], name: "French Fries", price_tsh: 3500, sort_order: 1 },
-    { category_id: catIds[1], name: "Coleslaw", price_tsh: 2500, sort_order: 2 },
-    { category_id: catIds[1], name: "Onion Rings", price_tsh: 4000, sort_order: 3 },
-    { category_id: catIds[2], name: "Coca-Cola", price_tsh: 2000, sort_order: 1 },
-    { category_id: catIds[2], name: "Mango Juice", price_tsh: 2500, sort_order: 2 },
-    { category_id: catIds[2], name: "Water", price_tsh: 1000, sort_order: 3 },
-    { category_id: catIds[3], name: "Burger + Fries Combo", price_tsh: 11000, sort_order: 1 },
-    { category_id: catIds[3], name: "Family Meal Deal", price_tsh: 35000, sort_order: 2 },
+  const catMilo = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[0].name) as { id: number }).id;
+  const catChips = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[1].name) as { id: number }).id;
+  const catDrinks = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[2].name) as { id: number }).id;
+  const catJuice = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[3].name) as { id: number }).id;
+
+  // The 23 authentic restaurant menu items
+  const menuItemsData = [
+    // 1-8: Milo Mikuu
+    {
+      category_id: catMilo,
+      name: "Wali Nyama",
+      price_tsh: 2000,
+      sort_order: 1,
+      description: "Wali mweupe uliopikwa vizuri, ukiambatana na mchuzi mtamu wa nyama ya ng'ombe, maharage ya nazi na mbogamboga za majani.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 12,
+      calories: 680,
+      spiciness: "Mild",
+      dietary_tags: ["Halal", "Mlo Kamili", "Pendwa la Wengi"],
+      options: {
+        variants: [
+          { name: "Sahani ya Kawaida", price_diff: 0 },
+          { name: "Sahani Kubwa (+TZS 1,000)", price_diff: 1000 },
+        ],
+        addons: [
+          { name: "Nyama ya Ziada", price: 1000 },
+          { name: "Maharage ya Ziada", price: 500 },
+          { name: "Mboga za Majani", price: 500 },
+          { name: "Kachumbari ya Pilipili", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catMilo,
+      name: "Wali Kuku",
+      price_tsh: 3500,
+      sort_order: 2,
+      description: "Wali mweupe safi ukiambatana na kuku wa kukaanga au rosti, maharage ya nazi na mbogamboga safi.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 15,
+      calories: 720,
+      spiciness: "Mild",
+      dietary_tags: ["Halal", "Kuku Mtamu", "Mlo Kamili"],
+      options: {
+        variants: [
+          { name: "Kuku wa Kukaanga", price_diff: 0 },
+          { name: "Kuku wa Rosti", price_diff: 0 },
+        ],
+        addons: [
+          { name: "Kipande cha Kuku cha Ziada", price: 2000 },
+          { name: "Maharage ya Ziada", price: 500 },
+          { name: "Mboga za Majani", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catMilo,
+      name: "Pilau Nyama",
+      price_tsh: 3000,
+      sort_order: 3,
+      description: "Pilau halisi ya Kiswahili iliyokolea viungo vya asili (iliki, karafuu, mdalasini), nyama laini ya ng'ombe, maharage, mbogamboga na kachumbari.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 15,
+      calories: 740,
+      spiciness: "Medium",
+      dietary_tags: ["Halal", "Pilau Halisi", "Pendwa"],
+      options: {
+        variants: [
+          { name: "Sahani ya Kawaida", price_diff: 0 },
+          { name: "Sahani Kubwa (+TZS 1,500)", price_diff: 1500 },
+        ],
+        addons: [
+          { name: "Nyama ya Ziada", price: 1000 },
+          { name: "Maharage ya Ziada", price: 500 },
+          { name: "Kachumbari Maalum", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catMilo,
+      name: "Pilau Kuku",
+      price_tsh: 4000,
+      sort_order: 4,
+      description: "Pilau moto yenye viungo kamili vya pwani, ikisindikizwa na kuku wa kukaanga/rosto, maharage, mbogamboga na kachumbari.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 15,
+      calories: 790,
+      spiciness: "Medium",
+      dietary_tags: ["Halal", "Kuku Choma", "Ladha ya Pwani"],
+      options: {
+        variants: [
+          { name: "Kuku wa Kukaanga", price_diff: 0 },
+          { name: "Kuku wa Rosti", price_diff: 0 },
+        ],
+        addons: [
+          { name: "Kipande cha Kuku cha Ziada", price: 2000 },
+          { name: "Pilau ya Ziada", price: 1500 },
+        ],
+      },
+    },
+    {
+      category_id: catMilo,
+      name: "Biryan nyama",
+      price_tsh: 4000,
+      sort_order: 5,
+      description: "Mchele safi wa basmati wenye nakshi za viungo na rosti nzito ya nyama ya ng'ombe iliyotiwa mtindi, ndimu na viungo vya biryani.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 15,
+      calories: 760,
+      spiciness: "Medium",
+      dietary_tags: ["Halal", "Biryani Halisi", "Chef Special"],
+      options: {
+        variants: [
+          { name: "Sahani ya Kawaida", price_diff: 0 },
+          { name: "Sahani ya Familia (+TZS 3,500)", price_diff: 3500 },
+        ],
+        addons: [
+          { name: "Rosti ya Nyama ya Ziada", price: 1500 },
+          { name: "Yai la Kuchemsha", price: 500 },
+          { name: "Kachumbari ya Mtindi", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catMilo,
+      name: "Biryan Kuku",
+      price_tsh: 6000,
+      sort_order: 6,
+      description: "Biryani ya kifalme ya kuku aliyelainika kwenye mchuzi mzito wa viungo vya asili, basmati yenye harufu nzuri na kachumbari.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 15,
+      calories: 840,
+      spiciness: "Medium",
+      dietary_tags: ["Halal", "Mlo wa Kifalme", "Nyota ya Mgahawa"],
+      options: {
+        variants: [
+          { name: "Portion Kamili", price_diff: 0 },
+        ],
+        addons: [
+          { name: "Kuku wa Ziada", price: 2500 },
+          { name: "Yai la Kuchemsha", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catMilo,
+      name: "Ugali nyama choma",
+      price_tsh: 3000,
+      sort_order: 7,
+      description: "Ugali wa moto uliosongwa kwa unga safi, ukisindikizwa na nyama choma laini ya ng'ombe, mboga za majani na kachumbari.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 15,
+      calories: 690,
+      spiciness: "Mild",
+      dietary_tags: ["Halal", "Nyama Choma", "Asili"],
+      options: {
+        variants: [
+          { name: "Ugali Sembe", price_diff: 0 },
+          { name: "Ugali Dona", price_diff: 0 },
+        ],
+        addons: [
+          { name: "Nyama Choma ya Ziada", price: 1500 },
+          { name: "Mchuzi wa Rosti", price: 500 },
+          { name: "Mboga za Majani", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catMilo,
+      name: "Ugali samaki",
+      price_tsh: 3000,
+      sort_order: 8,
+      description: "Ugali wa moto na samaki safi wa kukaanga au kupikwa rosti ya nyanya chungu na mboga za majani.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 20,
+      calories: 620,
+      spiciness: "Mild",
+      dietary_tags: ["Halal", "Samaki Safi", "Afya"],
+      options: {
+        variants: [
+          { name: "Samaki wa Kukaanga", price_diff: 0 },
+          { name: "Samaki wa Rosti", price_diff: 0 },
+        ],
+        addons: [
+          { name: "Samaki wa Ziada", price: 2000 },
+          { name: "Mchuzi wa Nazi", price: 500 },
+        ],
+      },
+    },
+
+    // 9-14 & 19: Chips & Grill
+    {
+      category_id: catChips,
+      name: "Chips plain",
+      price_tsh: 2000,
+      sort_order: 1,
+      description: "Chipsi kavu za viazi vitamu vya mviringo vilivyokaangwa crispy na kugeuka rangi ya dhahabu.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 10,
+      calories: 420,
+      spiciness: "Mild",
+      dietary_tags: ["Vegetarian", "Crispy", "Viazi Safi"],
+      options: {
+        variants: [
+          { name: "Sahani ya Kawaida", price_diff: 0 },
+          { name: "Sahani Kubwa (Jumbo) (+TZS 1,500)", price_diff: 1500 },
+        ],
+        addons: [
+          { name: "Tomato & Pili Pili Sauce", price: 0 },
+          { name: "Kachumbari", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catChips,
+      name: "Chips yai(zege)",
+      price_tsh: 3000,
+      sort_order: 2,
+      description: "Chipsi zege maarufu: Chips moto zilizopikwa na mayai mawili safi ya kienyeji, kachumbari na pili-pili.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 10,
+      calories: 560,
+      spiciness: "Medium",
+      dietary_tags: ["Vegetarian", "Zege Tamu", "Pendwa la Vijana"],
+      options: {
+        variants: [
+          { name: "Mayai 2 (Kawaida)", price_diff: 0 },
+          { name: "Mayai 3 (+TZS 1,000)", price_diff: 1000 },
+        ],
+        addons: [
+          { name: "Pilipili ya Kukaanga", price: 500 },
+          { name: "Kachumbari ya Ziada", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catChips,
+      name: "Chips Kuku 1/3",
+      price_tsh: 5500,
+      sort_order: 3,
+      description: "Chipsi kavu moto zikiambatana na robo tatu (1/3) ya kuku wa kukaanga/kuchoma na kachumbari safi.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 15,
+      calories: 790,
+      spiciness: "Mild",
+      dietary_tags: ["Halal", "Kuku 1/3", "Crispy"],
+      options: {
+        variants: [
+          { name: "Kuku wa Kukaanga", price_diff: 0 },
+          { name: "Kuku wa Kuchoma", price_diff: 0 },
+        ],
+        addons: [
+          { name: "Kipande cha Kuku cha Ziada", price: 2500 },
+          { name: "Chips za Ziada", price: 1000 },
+        ],
+      },
+    },
+    {
+      category_id: catChips,
+      name: "Chips yai Kuku 1/3",
+      price_tsh: 6500,
+      sort_order: 4,
+      description: "Mchanganyiko kamili wa chipsi zege moto ya mayai 2 pamoja na robo tatu (1/3) ya kuku mtamu wa choma au kukaanga.",
+      is_featured: 1,
+      is_deal: 1,
+      prep_time_min: 15,
+      calories: 890,
+      spiciness: "Medium",
+      dietary_tags: ["Halal", "Super Combo", "Mlo Kamili"],
+      options: {
+        variants: [
+          { name: "Kuku Choma", price_diff: 0 },
+          { name: "Kuku wa Kukaanga", price_diff: 0 },
+        ],
+        addons: [
+          { name: "Yai la Ziada kwenye Zege", price: 1000 },
+          { name: "Kachumbari ya Ziada", price: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catChips,
+      name: "Mshkaki wa ng'ombe",
+      price_tsh: 500,
+      sort_order: 5,
+      description: "Mshikaki mmoja wa nyama laini ya ng'ombe iliyokolea viungo vya tangawizi, vitunguu swaumu, ndimu na kuchomwa kwenye mkaa moto.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 8,
+      calories: 120,
+      spiciness: "Medium",
+      dietary_tags: ["Halal", "Mkaa Choma", "Kitafunwa"],
+      options: {
+        addons: [
+          { name: "Pili Pili Kali ya Pembeni", price: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catChips,
+      name: "mshkaki wa Kuku",
+      price_tsh: 1000,
+      sort_order: 6,
+      description: "Mshikaki wa minofu safi ya kuku iliyolowekwa kwenye viungo maalum na kuchomwa kwa ustadi.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 8,
+      calories: 150,
+      spiciness: "Medium",
+      dietary_tags: ["Halal", "Minofu ya Kuku", "Moto"],
+      options: {
+        addons: [
+          { name: "Pili Pili Kali", price: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catJuice,
+      name: "Ndizi",
+      price_tsh: 500,
+      sort_order: 3,
+      description: "Ndizi mbivu tamu ya asili au ndizi ya kukaanga/kuchoma ya kuongeza nguvu.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 1,
+      calories: 90,
+      spiciness: "Mild",
+      dietary_tags: ["Tunda Safi", "Asili"],
+      options: {
+        variants: [
+          { name: "Ndizi Mbivu", price_diff: 0 },
+          { name: "Ndizi ya Kuchoma", price_diff: 0 },
+          { name: "Ndizi ya Kukaanga", price_diff: 0 },
+        ],
+      },
+    },
+
+    // 15-18 & 22-23: Vinywaji Baridi
+    {
+      category_id: catDrinks,
+      name: "Maji 1l.",
+      price_tsh: 500,
+      sort_order: 1,
+      description: "Maji safi ya asili ya kunywa ya chupa ya Lita 1 (1L), yaliyopozwa vizuri.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 1,
+      calories: 0,
+      spiciness: "Mild",
+      dietary_tags: ["Maji Safi", "Baridi"],
+      options: {
+        variants: [
+          { name: "Maji ya Baridi", price_diff: 0 },
+          { name: "Maji ya Kawaida (Room Temp)", price_diff: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catDrinks,
+      name: "maji 1.6l",
+      price_tsh: 800,
+      sort_order: 2,
+      description: "Chupa kubwa ya maji safi ya kunywa ya Lita 1.6 (1.6L) ya kuburudisha kiu yako na timu.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 1,
+      calories: 0,
+      spiciness: "Mild",
+      dietary_tags: ["Maji Safi", "Chupa Kubwa"],
+      options: {
+        variants: [
+          { name: "Maji ya Baridi", price_diff: 0 },
+          { name: "Maji ya Kawaida (Room Temp)", price_diff: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catDrinks,
+      name: "Soda (Pepsi products,and coca-cola products,",
+      price_tsh: 700,
+      sort_order: 3,
+      description: "Soda baridi ya chupa ya kioo (Coca-Cola, Fanta, Sprite, Pepsi, Mirinda, Sparletta).",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 1,
+      calories: 140,
+      spiciness: "Mild",
+      dietary_tags: ["Kinywaji Baridi", "Chupa ya Kioo"],
+      options: {
+        variants: [
+          { name: "Coca-Cola", price_diff: 0 },
+          { name: "Pepsi", price_diff: 0 },
+          { name: "Fanta Orange", price_diff: 0 },
+          { name: "Sprite", price_diff: 0 },
+          { name: "Mirinda", price_diff: 0 },
+          { name: "Sparletta", price_diff: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catDrinks,
+      name: "Soda take away",
+      price_tsh: 1000,
+      sort_order: 4,
+      description: "Soda ya chupa ya plastiki (PET) au kopo ya kuchukua popote bila kurejesha chupa.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 1,
+      calories: 150,
+      spiciness: "Mild",
+      dietary_tags: ["Take Away", "Kopo / PET"],
+      options: {
+        variants: [
+          { name: "Coca-Cola PET 500ml", price_diff: 0 },
+          { name: "Pepsi PET 500ml", price_diff: 0 },
+          { name: "Fanta PET 500ml", price_diff: 0 },
+          { name: "Sprite PET 500ml", price_diff: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catDrinks,
+      name: "Azam cola (soda products)",
+      price_tsh: 500,
+      sort_order: 5,
+      description: "Soda baridi ya Azam (Azam Cola, Azam Orange, Azam Embe, Azam Malti).",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 1,
+      calories: 130,
+      spiciness: "Mild",
+      dietary_tags: ["Azam Products", "Kinywaji Baridi"],
+      options: {
+        variants: [
+          { name: "Azam Cola", price_diff: 0 },
+          { name: "Azam Orange", price_diff: 0 },
+          { name: "Azam Embe", price_diff: 0 },
+          { name: "Azam Malti", price_diff: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catDrinks,
+      name: "Afiya (soda products)",
+      price_tsh: 500,
+      sort_order: 6,
+      description: "Kinywaji baridi na kitamu cha matunda cha chapa ya Afya.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 1,
+      calories: 110,
+      spiciness: "Mild",
+      dietary_tags: ["Afya Drink", "Kuburudisha"],
+      options: {
+        variants: [
+          { name: "Afya Mango", price_diff: 0 },
+          { name: "Afya Passion", price_diff: 0 },
+          { name: "Afya Orange", price_diff: 0 },
+        ],
+      },
+    },
+
+    // 20-21: Juisi Freshi & Smoothies
+    {
+      category_id: catJuice,
+      name: "Fresh fruits smoothy Juice",
+      price_tsh: 1000,
+      sort_order: 1,
+      description: "Juisi freshi ya asili ya matunda mchanganyiko (embe, parachichi, nanasi, passion) iliyotengenezwa bila maji ya ziada.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 4,
+      calories: 160,
+      spiciness: "Mild",
+      dietary_tags: ["100% Asili", "Matunda Freshi", "Bila Sukari"],
+      options: {
+        variants: [
+          { name: "Mchanganyiko (Embe, Parachichi, Nanasi)", price_diff: 0 },
+          { name: "Embe & Passion", price_diff: 0 },
+          { name: "Parachichi Safi", price_diff: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catJuice,
+      name: "special fruits smoothy juice",
+      price_tsh: 1500,
+      sort_order: 2,
+      description: "Juisi maalum yenye nguvu: Matunda freshi, asali mbichi ya nyuki, tende, maziwa freshi na karanga.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 5,
+      calories: 280,
+      spiciness: "Mild",
+      dietary_tags: ["Special Energy", "Virutubisho", "Pendwa la Ofisi"],
+      options: {
+        variants: [
+          { name: "Special Mix Kamili", price_diff: 0 },
+          { name: "Special Bila Maziwa", price_diff: 0 },
+        ],
+      },
+    },
   ];
 
-  for (const item of items) {
-    db.prepare("INSERT INTO menu_items (category_id, name, price_tsh, sort_order) VALUES (?, ?, ?, ?)").run(
-      item.category_id, item.name, item.price_tsh, item.sort_order
-    );
+  // Insert or update each menu item
+  const upsertStmt = db.prepare(`
+    INSERT INTO menu_items (
+      category_id, name, price_tsh, sort_order, active, deleted,
+      description, is_featured, is_deal, prep_time_min, calories,
+      spiciness, dietary_tags, options_json
+    ) VALUES (?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const updateStmt = db.prepare(`
+    UPDATE menu_items SET
+      category_id = ?, price_tsh = ?, sort_order = ?,
+      description = ?, is_featured = ?, is_deal = ?, prep_time_min = ?, calories = ?,
+      spiciness = ?, dietary_tags = ?, options_json = ?
+    WHERE id = ?
+  `);
+
+  for (const item of menuItemsData) {
+    const existing = db.prepare("SELECT id FROM menu_items WHERE LOWER(name) = LOWER(?)").get(item.name) as { id: number } | undefined;
+    if (existing) {
+      updateStmt.run(
+        item.category_id,
+        item.price_tsh,
+        item.sort_order,
+        item.description,
+        item.is_featured,
+        item.is_deal,
+        item.prep_time_min,
+        item.calories,
+        item.spiciness,
+        JSON.stringify(item.dietary_tags),
+        JSON.stringify(item.options),
+        existing.id
+      );
+    } else {
+      upsertStmt.run(
+        item.category_id,
+        item.name,
+        item.price_tsh,
+        item.sort_order,
+        item.description,
+        item.is_featured,
+        item.is_deal,
+        item.prep_time_min,
+        item.calories,
+        item.spiciness,
+        JSON.stringify(item.dietary_tags),
+        JSON.stringify(item.options)
+      );
+    }
+  }
+
+  // Deactivate old placeholder burger items if they still exist so user only sees their real 23 items
+  const legacyNames = ["Classic Burger", "Spicy Chicken Burger", "Double Beef Burger", "French Fries", "Coleslaw", "Onion Rings", "Burger + Fries Combo", "Family Meal Deal", "Mango Juice", "Water", "Coca-Cola"];
+  for (const legacy of legacyNames) {
+    db.prepare("UPDATE menu_items SET active = 0, deleted = 1 WHERE name = ?").run(legacy);
   }
 }
 
@@ -843,8 +1472,6 @@ function seed(db: Database.Database) {
   const existing = db.prepare("SELECT COUNT(*) as n FROM users").get() as { n: number };
   if (existing.n === 0) {
     if (isProduction()) {
-      // Production mode: never create known test accounts.
-      // Use environment variables for secure initial manager bootstrap.
       const initEmail = process.env.INITIAL_MANAGER_EMAIL?.trim();
       const initPassword = process.env.INITIAL_MANAGER_PASSWORD;
       const initName = process.env.INITIAL_MANAGER_NAME?.trim() || "Operations Manager";
@@ -866,7 +1493,6 @@ function seed(db: Database.Database) {
         );
       }
     } else {
-      // Development & Automated Test mode: seed standard dev accounts
       const managerHash = bcrypt.hashSync("Manager123!", 10);
       const cashierHash = bcrypt.hashSync("Cashier123!", 10);
 
@@ -879,8 +1505,8 @@ function seed(db: Database.Database) {
     }
   }
 
-  // Seed restaurant menu items if empty
-  seedMenuCategoriesAndItems(db);
+  // Synchronize authentic 23-item Swahili menu
+  syncSwahiliMenu(db);
 }
 
 function seedCorporateData(db: Database.Database) {
@@ -1014,115 +1640,137 @@ function seedCorporateData(db: Database.Database) {
     }
   }
 
-  // Seed Corporate Menu Packages (Product Offerings) in all environments if none exist
-  const pkgCount = db.prepare("SELECT COUNT(*) as n FROM corporate_menu_packages").get() as { n: number };
-  if (pkgCount.n === 0) {
-    const burgerItem = db.prepare("SELECT id FROM menu_items WHERE name = 'Classic Burger'").get() as { id: number } | undefined;
-    const spicyBurgerItem = db.prepare("SELECT id FROM menu_items WHERE name = 'Spicy Chicken Burger'").get() as { id: number } | undefined;
-    const doubleBurgerItem = db.prepare("SELECT id FROM menu_items WHERE name = 'Double Beef Burger'").get() as { id: number } | undefined;
-    const friesItem = db.prepare("SELECT id FROM menu_items WHERE name = 'French Fries'").get() as { id: number } | undefined;
-    const slawItem = db.prepare("SELECT id FROM menu_items WHERE name = 'Coleslaw'").get() as { id: number } | undefined;
-    const ringsItem = db.prepare("SELECT id FROM menu_items WHERE name = 'Onion Rings'").get() as { id: number } | undefined;
-    const cokeItem = db.prepare("SELECT id FROM menu_items WHERE name = 'Coca-Cola'").get() as { id: number } | undefined;
-    const juiceItem = db.prepare("SELECT id FROM menu_items WHERE name = 'Mango Juice'").get() as { id: number } | undefined;
+  // Seed / Refresh Corporate Menu Packages tailored to the authentic Swahili menu
+  const biryaniNyama = db.prepare("SELECT id FROM menu_items WHERE name = 'Biryan nyama' AND deleted = 0").get() as { id: number } | undefined;
+  const biryaniKuku = db.prepare("SELECT id FROM menu_items WHERE name = 'Biryan Kuku' AND deleted = 0").get() as { id: number } | undefined;
+  const pilauNyama = db.prepare("SELECT id FROM menu_items WHERE name = 'Pilau Nyama' AND deleted = 0").get() as { id: number } | undefined;
+  const waliKuku = db.prepare("SELECT id FROM menu_items WHERE name = 'Wali Kuku' AND deleted = 0").get() as { id: number } | undefined;
+  const chipsKuku = db.prepare("SELECT id FROM menu_items WHERE name = 'Chips Kuku 1/3' AND deleted = 0").get() as { id: number } | undefined;
+  const chipsZegeKuku = db.prepare("SELECT id FROM menu_items WHERE name = 'Chips yai Kuku 1/3' AND deleted = 0").get() as { id: number } | undefined;
+  const mshikakiNgombe = db.prepare("SELECT id FROM menu_items WHERE name = 'Mshkaki wa ng''ombe' AND deleted = 0").get() as { id: number } | undefined;
+  const maji1L = db.prepare("SELECT id FROM menu_items WHERE name = 'Maji 1l.' AND deleted = 0").get() as { id: number } | undefined;
+  const sodaGlass = db.prepare("SELECT id FROM menu_items WHERE name LIKE 'Soda (Pepsi%' AND deleted = 0").get() as { id: number } | undefined;
+  const freshJuice = db.prepare("SELECT id FROM menu_items WHERE name = 'Fresh fruits smoothy Juice' AND deleted = 0").get() as { id: number } | undefined;
+  const specialJuice = db.prepare("SELECT id FROM menu_items WHERE name = 'special fruits smoothy juice' AND deleted = 0").get() as { id: number } | undefined;
 
-    // Package 1: Individual Executive Lunch Box
+  // Safely seed or update Corporate Packages
+  const existingP1 = db.prepare("SELECT id FROM corporate_menu_packages WHERE sort_order = 1 OR name LIKE '%Executive%'").get() as { id: number } | undefined;
+  if (!existingP1) {
     const p1 = db.prepare(`
       INSERT INTO corporate_menu_packages (name, tagline, description, price_tsh, minimum_quantity, serves_people_min, lead_time_hours, badge, sort_order)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
     `).run(
-      "Individual Executive Lunch Box",
-      "Complete curated meal box per attendee",
-      "Each box includes 1 Prime Burger of choice (Classic Beef or Crispy Chicken), 1 portion Hot Crispy Fries, 1 Fresh Coleslaw, and 1 Chilled Beverage with cutlery & serviette.",
-      14500,
+      "Individual Executive Swahili Lunch Box",
+      "Curated premium single-portion office lunch box",
+      "Each box includes 1 Biryani Nyama au Pilau Kuku (pamoja na mbogamboga & maharage), 1 Fresh Fruits Smoothie Juice, na 1 Maji 1L pamoja na vifaa vya kulia & serviette.",
+      6500,
       5,
       5,
       2,
       "Most Popular"
     );
     const p1Id = p1.lastInsertRowid as number;
-    if (burgerItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(p1Id, burgerItem.id);
-    if (friesItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(p1Id, friesItem.id);
-    if (slawItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(p1Id, slawItem.id);
-    if (cokeItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(p1Id, cokeItem.id);
+    if (biryaniNyama) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(p1Id, biryaniNyama.id);
+    if (freshJuice) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(p1Id, freshJuice.id);
+    if (maji1L) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(p1Id, maji1L.id);
+  } else {
+    db.prepare(`
+      UPDATE corporate_menu_packages
+      SET name = ?, tagline = ?, description = ?, price_tsh = ?, minimum_quantity = 5, serves_people_min = 5
+      WHERE id = ?
+    `).run(
+      "Individual Executive Swahili Lunch Box",
+      "Curated premium single-portion office lunch box",
+      "Each box includes 1 Biryani Nyama au Pilau Kuku (pamoja na mbogamboga & maharage), 1 Fresh Fruits Smoothie Juice, na 1 Maji 1L pamoja na vifaa vya kulia & serviette.",
+      6500,
+      existingP1.id
+    );
+    db.prepare("DELETE FROM corporate_menu_package_items WHERE package_id = ?").run(existingP1.id);
+    if (biryaniNyama) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(existingP1.id, biryaniNyama.id);
+    if (freshJuice) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(existingP1.id, freshJuice.id);
+    if (maji1L) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 1)").run(existingP1.id, maji1L.id);
+  }
 
-    // Package 2: Team Lunch Feast (Serves 10)
+  const existingP2 = db.prepare("SELECT id FROM corporate_menu_packages WHERE sort_order = 2 OR name LIKE '%Team%'").get() as { id: number } | undefined;
+  if (!existingP2) {
     const p2 = db.prepare(`
       INSERT INTO corporate_menu_packages (name, tagline, description, price_tsh, minimum_quantity, serves_people_min, lead_time_hours, badge, sort_order)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 2)
     `).run(
-      "Team Burger Feast (Serves 10)",
-      "Office group sharing banquet",
-      "Includes 10 Assorted Char-Grilled Burgers (6 Classic Beef, 4 Crispy Spicy Chicken), 5 Jumbo Fries Trays, 10 Chilled Soft Drinks, and 4 Signature Dip Sauces.",
-      120000,
+      "Team Swahili Feast (Serves 10)",
+      "Chakula cha pamoja kwa ajili ya timu nzima ofisini",
+      "Inajumuisha milo 10 mikubwa: 4x Pilau Nyama, 3x Wali Kuku, 3x Chips Yai Kuku 1/3, ikisindikizwa na 10x Soda baridi, maharage na mbogamboga.",
+      50000,
       1,
       10,
       2,
       "Team Value"
     );
     const p2Id = p2.lastInsertRowid as number;
-    if (burgerItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 6)").run(p2Id, burgerItem.id);
-    if (spicyBurgerItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(p2Id, spicyBurgerItem.id);
-    if (friesItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 5)").run(p2Id, friesItem.id);
-    if (cokeItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 10)").run(p2Id, cokeItem.id);
+    if (pilauNyama) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(p2Id, pilauNyama.id);
+    if (waliKuku) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 3)").run(p2Id, waliKuku.id);
+    if (chipsZegeKuku) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 3)").run(p2Id, chipsZegeKuku.id);
+    if (sodaGlass) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 10)").run(p2Id, sodaGlass.id);
+  } else {
+    db.prepare(`
+      UPDATE corporate_menu_packages
+      SET name = ?, tagline = ?, description = ?, price_tsh = ?, minimum_quantity = 1, serves_people_min = 10
+      WHERE id = ?
+    `).run(
+      "Team Swahili Feast (Serves 10)",
+      "Chakula cha pamoja kwa ajili ya timu nzima ofisini",
+      "Inajumuisha milo 10 mikubwa: 4x Pilau Nyama, 3x Wali Kuku, 3x Chips Yai Kuku 1/3, ikisindikizwa na 10x Soda baridi, maharage na mbogamboga.",
+      50000,
+      existingP2.id
+    );
+    db.prepare("DELETE FROM corporate_menu_package_items WHERE package_id = ?").run(existingP2.id);
+    if (pilauNyama) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(existingP2.id, pilauNyama.id);
+    if (waliKuku) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 3)").run(existingP2.id, waliKuku.id);
+    if (chipsZegeKuku) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 3)").run(existingP2.id, chipsZegeKuku.id);
+    if (sodaGlass) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 10)").run(existingP2.id, sodaGlass.id);
+  }
 
-    // Package 3: Boardroom Mixed Platter (Serves 8-10)
+  const existingP3 = db.prepare("SELECT id FROM corporate_menu_packages WHERE sort_order = 3 OR name LIKE '%VIP%'").get() as { id: number } | undefined;
+  if (!existingP3) {
     const p3 = db.prepare(`
       INSERT INTO corporate_menu_packages (name, tagline, description, price_tsh, minimum_quantity, serves_people_min, lead_time_hours, badge, sort_order)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 3)
     `).run(
-      "Boardroom VIP Mixed Platter (Serves 8–10)",
-      "Premium meeting & executive catering",
-      "Includes 8 Double Beef & Crispy Chicken Sliders, 3 Large Fries Trays, 2 Golden Onion Rings Platters, 2 Coleslaw Bowls, and 8 Coastal Mango Juices.",
-      115000,
+      "Boardroom VIP Biryani Banquet (Serves 8–10)",
+      "Karamu maalum ya Biryani na juisi za asili kwa wageni maalum",
+      "Inajumuisha 5x Biryani Kuku, 4x Biryani Nyama, mbogamboga na maharage, 10x Special Fruits Smoothie Juices, na 10x Maji 1L.",
+      68000,
       1,
       8,
       3,
       "Executive Choice"
     );
     const p3Id = p3.lastInsertRowid as number;
-    if (doubleBurgerItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(p3Id, doubleBurgerItem.id);
-    if (spicyBurgerItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(p3Id, spicyBurgerItem.id);
-    if (friesItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 3)").run(p3Id, friesItem.id);
-    if (ringsItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 2)").run(p3Id, ringsItem.id);
-    if (juiceItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 8)").run(p3Id, juiceItem.id);
+    if (biryaniKuku) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 5)").run(p3Id, biryaniKuku.id);
+    if (biryaniNyama) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(p3Id, biryaniNyama.id);
+    if (specialJuice) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 10)").run(p3Id, specialJuice.id);
+    if (maji1L) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 10)").run(p3Id, maji1L.id);
+  }
 
-    // Package 4: Bulk Office Sides Tray
+  const existingP4 = db.prepare("SELECT id FROM corporate_menu_packages WHERE sort_order = 4 OR name LIKE '%Quick%'").get() as { id: number } | undefined;
+  if (!existingP4) {
     const p4 = db.prepare(`
       INSERT INTO corporate_menu_packages (name, tagline, description, price_tsh, minimum_quantity, serves_people_min, lead_time_hours, badge, sort_order)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 4)
     `).run(
-      "Bulk Sides & Appetizer Sharing Tray",
+      "Quick Energy Mshikaki & Chips Pack (Serves 5)",
       "Finger-food supplement for meetings & workshops",
-      "Includes 4 Large Hand-Cut Fries, 4 Crunchy Onion Rings, 4 Fresh Coleslaw Bowls, and 6 Assorted House Dips.",
-      42000,
+      "Inajumuisha 5x Chips Kuku 1/3, 10x Mishikaki ya Ng'ombe, na 5x Fresh Fruits Smoothie Juice.",
+      25000,
       1,
-      6,
+      5,
       1,
-      "Sides Bundle"
+      "Quick Pack"
     );
     const p4Id = p4.lastInsertRowid as number;
-    if (friesItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(p4Id, friesItem.id);
-    if (ringsItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(p4Id, ringsItem.id);
-    if (slawItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 4)").run(p4Id, slawItem.id);
-
-    // Package 5: Chilled Drink Crate (12 Drinks)
-    const p5 = db.prepare(`
-      INSERT INTO corporate_menu_packages (name, tagline, description, price_tsh, minimum_quantity, serves_people_min, lead_time_hours, badge, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 5)
-    `).run(
-      "Chilled Refreshment Crate (Pack of 12)",
-      "Assorted sodas & fresh coastal juices",
-      "Includes 6 Fresh Mango Juices and 6 Classic Coca-Colas, iced and insulated for office delivery.",
-      24000,
-      1,
-      12,
-      1,
-      "Drinks Pack"
-    );
-    const p5Id = p5.lastInsertRowid as number;
-    if (juiceItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 6)").run(p5Id, juiceItem.id);
-    if (cokeItem) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 6)").run(p5Id, cokeItem.id);
+    if (chipsKuku) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 5)").run(p4Id, chipsKuku.id);
+    if (mshikakiNgombe) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 10)").run(p4Id, mshikakiNgombe.id);
+    if (freshJuice) db.prepare("INSERT INTO corporate_menu_package_items (package_id, menu_item_id, quantity) VALUES (?, ?, 5)").run(p4Id, freshJuice.id);
   }
 
   // Seed Sample Order Templates (Development/Test only)
@@ -1150,4 +1798,5 @@ function seedCorporateData(db: Database.Database) {
 }
 
 export default getDb;
+
 

@@ -909,7 +909,7 @@ export default function CorporateClient() {
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
-                A La Carte Burgers & Sides ({individualItems.length})
+                A La Carte Dishes & Refreshments ({individualItems.length})
               </button>
             </div>
 

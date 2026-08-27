@@ -91,17 +91,17 @@ export default function ProductCard({
           <div className="absolute top-2 left-2 flex flex-wrap gap-1">
             {item.is_deal && (
               <span className="text-[9px] sm:text-[10px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded-md bg-[#E5002B] text-white shadow-xs">
-                Deal
+                Ofa
               </span>
             )}
             {!item.in_stock && (
               <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md bg-slate-900/80 text-white backdrop-blur-xs">
-                Sold Out
+                Imeisha
               </span>
             )}
             {item.in_stock && item.track_stock && item.stock_qty <= 4 && (
               <span className="text-[9px] sm:text-[10px] font-mono uppercase font-bold px-1.5 py-0.5 rounded-md bg-amber-500 text-white shadow-xs">
-                {item.stock_qty} left
+                Zimebaki {item.stock_qty}
               </span>
             )}
             {showCategoryBadge && !item.is_deal && (
@@ -125,7 +125,7 @@ export default function ProductCard({
           <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-slate-400 pt-0.5">
             <span className="flex items-center gap-0.5 text-slate-500">
               <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-500" />
-              <span>{item.prep_time_min}m</span>
+              <span>Dak {item.prep_time_min}</span>
             </span>
             {item.spiciness && item.spiciness !== "Mild" && (
               <>
@@ -156,24 +156,24 @@ export default function ProductCard({
               ? "bg-emerald-600 text-white px-2.5 sm:px-3 py-1.5 text-xs shadow-xs"
               : "bg-[#0062C3] hover:bg-[#004B93] text-white active:scale-90 shadow-xs px-2.5 sm:px-3 py-1.5 text-xs"
           }`}
-          aria-label={hasRequiredOptions ? `Customize ${item.name}` : `Add ${item.name} to cart`}
+          aria-label={hasRequiredOptions ? `Badili ${item.name}` : `Ongeza ${item.name}`}
         >
           {quickAdded ? (
             <>
               <Check className="w-3.5 h-3.5 stroke-[3]" />
-              <span className="hidden sm:inline">Added</span>
+              <span className="hidden sm:inline">Imewekwa</span>
             </>
           ) : !item.in_stock ? (
-            <span>Sold</span>
+            <span>Imeisha</span>
           ) : hasRequiredOptions ? (
             <>
               <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span className="hidden sm:inline">Options</span>
+              <span className="hidden sm:inline">Chaguzi</span>
             </>
           ) : (
             <>
               <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Add</span>
+              <span className="hidden sm:inline">Ongeza</span>
             </>
           )}
         </button>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { PublicItem } from "@/app/api/public/menu/route";
 import ProductCard from "@/components/customer/ProductCard";
 import ItemCustomizerModal from "@/components/customer/ItemCustomizerModal";
+import AdSlot from "@/components/ads/AdSlot";
 import { useCart } from "@/context/CartContext";
 import {
   Search,
@@ -119,10 +120,10 @@ export default function OrderClient({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-serif">
-                Menu & Food Ordering
+                Orodha ya Chakula & Vinywaji
               </h1>
               <p className="text-slate-500 text-xs mt-0.5">
-                {filteredAndSortedItems.length} dishes ready to order • Avg. prep 15–25 mins
+                Milo {filteredAndSortedItems.length} tayari kuandaliwa • Dakika 15–25 Mlangoni
               </p>
             </div>
 
@@ -133,7 +134,7 @@ export default function OrderClient({
                 className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EBF4FF] text-[#0062C3] hover:bg-blue-100 border border-blue-200/60 text-xs font-bold transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>{promotions.length} Promo Codes Active</span>
+                <span>Punguzo {promotions.length} Lipo Wazi</span>
               </Link>
             )}
           </div>
@@ -146,14 +147,14 @@ export default function OrderClient({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search burgers, wings, peri-fries, juices..."
+                placeholder="Tafuta pilau, biryani, chipsi yai, mishikaki, soda, juisi..."
                 className="w-full bg-white border border-slate-200 focus:border-[#0062C3] rounded-xl pl-9 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none shadow-2xs transition-colors"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-                  aria-label="Clear search"
+                  aria-label="Futa utafutaji"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -167,10 +168,10 @@ export default function OrderClient({
                 onChange={(e) => setSortBy(e.target.value as any)}
                 className="w-full bg-white border border-slate-200 focus:border-[#0062C3] rounded-xl px-3 py-2.5 text-xs sm:text-sm text-slate-800 focus:outline-none appearance-none cursor-pointer shadow-2xs transition-colors"
               >
-                <option value="featured">Featured & Popular</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="prep_time">Fastest Prep Time</option>
+                <option value="featured">Chaguo Bora & Maarufu</option>
+                <option value="price_asc">Bei: Ndogo kwanza</option>
+                <option value="price_desc">Bei: Kubwa kwanza</option>
+                <option value="prep_time">Maandalizi ya Haraka</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
@@ -190,7 +191,7 @@ export default function OrderClient({
                   : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200/90"
               }`}
             >
-              All ({items.length})
+              Vyote ({items.length})
             </button>
             {categories.map((cat) => {
               const count = items.filter((i) => i.category_id === cat.id).length;
@@ -215,30 +216,30 @@ export default function OrderClient({
           {/* Sub Dietary Filters */}
           <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 text-xs scrollbar-none">
             {[
-              { id: "all", label: "All Items" },
-              { id: "combos", label: "🔥 Deals" },
-              { id: "spicy", label: "🌶️ Spicy" },
-              { id: "halal", label: "🥩 Halal" },
-              { id: "vegetarian", label: "🥗 Veg" },
-            ].map((chip) => {
-              const isSel = dietaryFilter === chip.id;
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={() => setDietaryFilter(chip.id)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors ${
-                    isSel
-                      ? "bg-[#EBF4FF] text-[#0062C3] border border-blue-200 font-bold"
-                      : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
-                  }`}
-                >
-                  {chip.label}
-                </button>
-              );
-            })}
+              { id: "all", label: "Milo Yote" },
+              { id: "combos", label: "🔥 Ofa za Pamoja" },
+              { id: "spicy", label: "🌶️ Ya Pilipili" },
+              { id: "halal", label: "✨ Halal 100%" },
+              { id: "vegetarian", label: "🥗 Mbogamboga" },
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setDietaryFilter(f.id)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                  dietaryFilter === f.id
+                    ? "bg-[#0062C3] text-white shadow-2xs font-bold"
+                    : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
         </div>
+
+        {/* ─── Menu In-Feed Ad Slot (Direct / AdSense) ───────────────────────── */}
+        <AdSlot placement="menu_infeed" />
 
         {/* ─── Product Grid: 2 COLUMNS ON MOBILE (HIGH PRIORITY) ────────────── */}
         {filteredAndSortedItems.length === 0 ? (
@@ -246,9 +247,9 @@ export default function OrderClient({
             <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
               <Search className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-bold text-slate-900">No dishes match your filter</h3>
+            <h3 className="text-sm font-bold text-slate-900">Hakuna chakula kilichopatikana</h3>
             <p className="text-slate-500 text-xs">
-              Try a different keyword or reset filters to see all delicious items.
+              Jaribu neno jingine au chagua kundi jingine la chakula kuona orodha nzima.
             </p>
             <button
               onClick={() => {
@@ -256,9 +257,9 @@ export default function OrderClient({
                 setSelectedCategory("all");
                 setDietaryFilter("all");
               }}
-              className="px-4 py-2 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-lg text-xs font-bold transition-colors"
+              className="px-4 py-2 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-lg text-xs font-bold transition-colors shadow-2xs"
             >
-              Reset Filters
+              Onyesha Milo Yote
             </button>
           </div>
         ) : (

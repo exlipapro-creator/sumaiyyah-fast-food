@@ -63,49 +63,43 @@ function hashStr(s: string): number {
 export function emojiFor(item: { name: string; category_name?: string }): string {
   const s = (item.name + " " + (item.category_name ?? "")).toLowerCase();
   const map: [string, string][] = [
-    ["burger", "🍔"], ["chicken", "🍗"], ["beef", "🥩"], ["fries", "🍟"],
-    ["drink", "🥤"], ["cola", "🥤"], ["juice", "🧃"], ["water", "💧"],
-    ["coffee", "☕"], ["tea", "🍵"], ["rice", "🍚"], ["pilau", "🍚"],
-    ["fish", "🐟"], ["chips", "🍟"], ["salad", "🥗"], ["combo", "🍱"],
-    ["meal", "🍽️"], ["side", "🍟"], ["onion", "🧅"], ["slaw", "🥗"],
-    ["special", "⭐"], ["mango", "🥭"], ["coconut", "🥥"], ["soda", "🧃"],
-    ["ring", "🧅"], ["family", "👪"],
+    ["mishikaki", "🍢"], ["biryani", "🍛"], ["pilau", "🍛"], ["wali", "🍚"],
+    ["kuku", "🍗"], ["nyama", "🥩"], ["samaki", "🐟"], ["chips", "🍟"],
+    ["zege", "🍳"], ["mayai", "🍳"], ["mboga", "🥗"], ["maharage", "🍲"],
+    ["juice", "🧃"], ["smoothy", "🥤"], ["maji", "💧"], ["soda", "🥤"],
+    ["chai", "🍵"], ["kahawa", "☕"], ["drink", "🥤"], ["special", "⭐"],
   ];
   for (const [k, e] of map) if (s.includes(k)) return e;
-  return "🍴";
+  return "🍽️";
 }
 
 const DESC_MAP: [RegExp, string][] = [
-  [/double|family/i, "Big appetite? A hearty, generous portion made to share."],
-  [/burger/i, "Flame-grilled patty, fresh salad and our house sauce in a soft bun."],
-  [/chicken/i, "Juicy marinated chicken, grilled to order over open coals."],
-  [/beef/i, "Tender seasoned beef, seared hot for deep smoky flavour."],
-  [/fish/i, "Fresh catch of the day, lightly spiced and pan-crisped."],
-  [/fries|chips/i, "Golden hand-cut potatoes, crisp outside and fluffy inside."],
-  [/onion|ring/i, "Crunchy battered onion rings, fried fresh to order."],
-  [/slaw|salad/i, "Crisp garden vegetables tossed in a light, tangy dressing."],
-  [/rice|pilau/i, "Fragrant basmati slow-cooked with our secret spice blend."],
-  [/cola|soda|drink/i, "Ice-cold and refreshing, the perfect pairing for any meal."],
-  [/juice|mango/i, "Freshly pressed tropical fruit, no added sugar."],
-  [/water/i, "Chilled bottled mineral water."],
-  [/coffee/i, "Rich locally roasted coffee, brewed strong."],
-  [/tea/i, "Spiced Swahili chai, brewed the traditional way."],
-  [/combo|meal/i, "A complete meal deal, everything you need in one order."],
+  [/biryani/i, "Fragrant spiced rice layered with seasoned tender meat, curry gravy and kachumbari."],
+  [/pilau/i, "Authentic spiced rice infused with cardamom, cloves, cinnamon, tender meat, and side beans & veggies."],
+  [/wali/i, "Steamed fragrant white rice served with seasoned meat or chicken, tender beans, and fresh greens."],
+  [/mishikaki/i, "Tender marinated meat skewers, flame-grilled to perfection with savoury spices."],
+  [/zege/i, "Classic fresh potato chips folded and crisped inside golden spiced eggs."],
+  [/chips/i, "Golden freshly cut potatoes, fried crisp on the outside and fluffy inside."],
+  [/juice|smoothy/i, "Freshly pressed tropical fruit smoothie, chilled and nutritious."],
+  [/soda/i, "Ice-cold refreshing beverage in glass bottle or can."],
+  [/maji/i, "Pure bottled chilled mineral water."],
+  [/chai/i, "Spiced tea brewed with fresh milk, cardamom, and ginger."],
+  [/chicken|kuku/i, "Juicy seasoned chicken, cooked to perfection."],
+  [/beef|nyama/i, "Tender prime beef slow-cooked in rich flavourful spices."],
+  [/fish|samaki/i, "Fresh fish delicately spiced and fried to golden perfection."],
 ];
 
 const INGREDIENT_MAP: [RegExp, string[]][] = [
-  [/burger/i, ["Beef/Chicken patty", "Brioche bun", "Lettuce", "Tomato", "House sauce"]],
-  [/chicken/i, ["Chicken", "Ginger-garlic marinade", "Chilli", "Lemon"]],
-  [/beef/i, ["Beef", "Onion", "Garlic", "Paprika", "Black pepper"]],
-  [/fries|chips/i, ["Potatoes", "Sunflower oil", "Sea salt"]],
-  [/onion|ring/i, ["Onion", "Batter", "Paprika", "Salt"]],
-  [/slaw|salad/i, ["Cabbage", "Carrot", "Mayo", "Lemon"]],
-  [/rice|pilau/i, ["Basmati rice", "Cardamom", "Cumin", "Cinnamon", "Onion"]],
-  [/mango|juice/i, ["Mango", "Water", "Ice"]],
-  [/cola|soda|drink/i, ["Carbonated water", "Cane sugar", "Natural flavours"]],
-  [/coffee/i, ["Arabica coffee", "Water"]],
-  [/tea/i, ["Black tea", "Milk", "Cardamom", "Ginger"]],
-  [/water/i, ["Mineral water"]],
+  [/biryani/i, ["Basmati rice", "Meat / Chicken", "Saffron spices", "Onions", "Gravy sauce", "Kachumbari"]],
+  [/pilau/i, ["Basmati rice", "Beef / Chicken", "Cardamom", "Cloves", "Cinnamon", "Beans", "Vegetables"]],
+  [/wali/i, ["White rice", "Beef / Chicken", "Maharage", "Mchicha / Greens", "Kachumbari"]],
+  [/mishikaki/i, ["Prime beef chunks", "Ginger-garlic marinade", "Paprika", "Black pepper", "Lime"]],
+  [/zege/i, ["Fresh potatoes", "Farm eggs", "Sunflower oil", "Salt", "Kachumbari"]],
+  [/chips/i, ["Fresh potatoes", "Sunflower oil", "Sea salt"]],
+  [/juice|smoothy/i, ["Fresh seasonal fruits", "Natural fruit nectar", "Ice"]],
+  [/soda/i, ["Carbonated water", "Sugar", "Natural flavours"]],
+  [/maji/i, ["Mineral water"]],
+  [/chai/i, ["Black tea leaves", "Fresh milk", "Cardamom", "Ginger", "Cinnamon"]],
 ];
 
 function firstMatch<T>(map: [RegExp, T][], name: string, fallback: T): T {
@@ -121,7 +115,7 @@ export function metaFor(item: PublicMenuItem): ItemMeta {
   const isDrink = /cola|soda|juice|water|coffee|tea|drink/i.test(lower);
   const isSpicy = /spicy|chilli|pepper|bbq|chicken|masala/i.test(lower);
   const isVeg = isDrink || /fries|chips|slaw|salad|onion|ring|rice|pilau|veg/i.test(lower);
-  const hasMeat = /burger|chicken|beef|fish|meat|mishkaki|nyama/i.test(lower);
+  const hasMeat = /chicken|kuku|beef|nyama|fish|samaki|meat|mishkaki|zege/i.test(lower);
 
   // Prep time 6..20 min; drinks are quick.
   const prepMin = isDrink ? 2 + (h % 4) : 8 + (h % 13);

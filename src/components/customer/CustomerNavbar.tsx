@@ -27,6 +27,7 @@ export default function CustomerNavbar() {
 
   const navLinks = [
     { href: "/order", label: "Menu & Order", icon: Compass },
+    { href: "/delivery", label: "Delivery Radius", icon: Route, badge: "City Center" },
     { href: "/corporate", label: "Office & Catering", icon: Building2, badge: "Corporate" },
     { href: "/track-order", label: "Live Tracking", icon: Route },
     { href: "/favorites", label: "Favorites", icon: Heart },
@@ -43,7 +44,7 @@ export default function CustomerNavbar() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
             </span>
             <span className="truncate text-slate-100 text-[11px] sm:text-xs">
-              <strong className="text-amber-300 font-semibold">Kitchen Live:</strong> 8:00 AM – 11:00 PM • Fast Fresh Swahili Fast Food & Char-Grill in Dar es Salaam
+              <strong className="text-amber-300 font-semibold">Kitchen Live:</strong> 8:00 AM – 11:00 PM • Freshly Prepared Fast Food & Char-Grill in Dar es Salaam
             </span>
           </div>
           <div className="hidden sm:flex items-center gap-4 text-xs shrink-0 text-slate-200">

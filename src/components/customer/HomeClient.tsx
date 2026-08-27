@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import type { PublicItem } from "@/app/api/public/menu/route";
 import ProductCard from "@/components/customer/ProductCard";
 import ItemCustomizerModal from "@/components/customer/ItemCustomizerModal";
+import AdSlot from "@/components/ads/AdSlot";
+import DeliveryRadiusMap from "@/components/customer/DeliveryRadiusMap";
 import { useCart } from "@/context/CartContext";
 import {
   Compass,
@@ -23,6 +25,8 @@ import {
   Smartphone,
   ArrowRight,
   Building2,
+  MapPin,
+  Navigation,
 } from "lucide-react";
 
 interface HomeClientProps {
@@ -87,25 +91,32 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-4 text-center lg:text-left">
               
-              {/* Status Pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-2xs text-slate-700 text-xs font-semibold">
+              {/* Status Pill with City Center Delivery highlight */}
+              <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-slate-700 text-xs font-semibold">
                 <span className="flex h-2 w-2 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
-                <span className="font-bold text-[#004B93]">KITCHEN OPEN</span>
+                <span className="font-bold text-[#004B93]">JIKO LIKO WAZI</span>
                 <span className="text-slate-300">•</span>
-                <span className="text-slate-500 font-mono">15–25 min prep</span>
+                <a
+                  href="#delivery-radius-section"
+                  className="text-[#0062C3] hover:underline font-bold flex items-center gap-1"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-[#0062C3]" />
+                  <span>Kariakoo, Upanga, Ilala, Magomeni, Posta & City Center</span>
+                  <ChevronRight className="w-3 h-3" />
+                </a>
               </div>
 
-              {/* Punchy Headline */}
-              <div className="space-y-1.5">
+              {/* Punchy Headline requested by user */}
+              <div className="space-y-2">
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.15]">
-                  Char-Grilled Burgers & <br className="hidden sm:inline" />
-                  <span className="text-[#0062C3]">Fresh Swahili Bites.</span>
+                  Chakula kitamu, <br className="hidden sm:inline" />
+                  <span className="text-[#0062C3]">bei chee.</span>
                 </h1>
-                <p className="text-slate-600 text-xs sm:text-sm max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                  Cooked to order in Kariakoo with 100% Halal prime cuts, homemade spiced sauces, and rapid Dar delivery.
+                <p className="text-slate-700 text-xs sm:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
+                  Mlo safi ulioandaliwa kwa ubora na viungo halisi, kinakufikia popote ulipo around city center.
                 </p>
               </div>
 
@@ -117,41 +128,41 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search smash burger, wings, peri-fries..."
+                    placeholder="Tafuta pilau, biryani, chipsi yai, mishikaki, juisi..."
                     className="w-full bg-white border border-slate-300 focus:border-[#0062C3] rounded-xl pl-10 pr-24 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none shadow-xs transition-colors"
                   />
                   <button
                     type="submit"
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 sm:px-4 py-1.5 bg-[#0062C3] hover:bg-[#004B93] text-white text-xs font-bold rounded-lg transition-colors shadow-2xs"
                   >
-                    Search
+                    Tafuta
                   </button>
                 </div>
               </form>
 
               {/* Direct Quick Actions */}
-              <div className="flex items-center justify-center lg:justify-start gap-2.5 pt-1">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-1">
                 <Link
                   href="/order"
                   id="home-explore-btn"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95"
                 >
                   <Compass className="w-4 h-4" />
-                  <span>Order Now</span>
+                  <span>Agiza Sasa</span>
                 </Link>
+                <a
+                  href="#delivery-radius-section"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-2xs"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Ramani ya Delivery</span>
+                </a>
                 <Link
                   href="/corporate"
                   className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-2xs"
                 >
                   <Building2 className="w-3.5 h-3.5 text-[#0062C3]" />
-                  <span>Office & Catering</span>
-                </Link>
-                <Link
-                  href="/track-order"
-                  className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-2xs"
-                >
-                  <Route className="w-3.5 h-3.5 text-[#0062C3]" />
-                  <span>Track Order</span>
+                  <span>Milo ya Ofisi</span>
                 </Link>
               </div>
 
@@ -207,6 +218,11 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
 
           </div>
         </div>
+      </section>
+
+      {/* ─── ADVERTISEMENT BANNER (SPONSORED / ADSENSE) ──────────────────── */}
+      <section className="max-w-7xl mx-auto px-3.5 sm:px-6">
+        <AdSlot placement="home_hero_top" />
       </section>
 
       {/* ─── FAST CATEGORY BAR ──────────────────────────────────────────────── */}
@@ -326,6 +342,11 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
             <ArrowRight className="w-3.5 h-3.5 text-[#0062C3]" />
           </Link>
         </div>
+      </section>
+
+      {/* ─── INTERACTIVE DELIVERY RADIUS & COVERAGE MAP ───────────────────────── */}
+      <section className="max-w-7xl mx-auto px-3.5 sm:px-6">
+        <DeliveryRadiusMap showTitle={true} />
       </section>
 
       {/* ─── MINIMAL TRUST ASSURANCE STRIP ───────────────────────────────────── */}

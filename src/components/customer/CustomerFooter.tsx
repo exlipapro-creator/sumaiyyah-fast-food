@@ -38,42 +38,54 @@ export default function CustomerFooter() {
               </div>
             </div>
             <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-              Serving Dar es Salaam&apos;s most flavorful smash burgers, crispy chicken, seasoned fries, and authentic Swahili fast food with speed and high standards.
+              Tunakuletea vyakula vitamu vya asili na fast food safi, mishikaki ya kuchoma, biryani, pilau, kuku wa kukaanga, chipsi kavu, na vinywaji baridi popote Dar es Salaam kwa haraka na ubora wa juu.
             </p>
             <div className="flex items-center gap-2 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 rounded-xl w-fit font-medium">
               <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>100% Halal Certified Kitchen</span>
+              <span>Jiko Halisi la Halal 100%</span>
             </div>
           </div>
 
           {/* Quick Links */}
           <div className="space-y-3">
-            <h3 className="text-white font-bold text-xs uppercase tracking-wider">Quick Navigation</h3>
+            <h3 className="text-white font-bold text-xs uppercase tracking-wider">Kurasa Muhimu</h3>
             <ul className="space-y-2.5 text-xs sm:text-sm">
               <li>
                 <Link href="/order" className="hover:text-amber-400 transition-colors">
-                  Explore Menu & Order
+                  Orodha ya Chakula & Kuagiza
                 </Link>
               </li>
               <li>
                 <Link href="/deals" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
-                  <span>Deals & Family Combos</span>
-                  <span className="text-[9px] bg-[#E5002B] text-white px-1.5 py-0.5 rounded font-black">SAVE</span>
+                  <span>Ofa & Milo ya Pamoja</span>
+                  <span className="text-[9px] bg-[#E5002B] text-white px-1.5 py-0.5 rounded font-black">PUNGUZO</span>
                 </Link>
               </li>
               <li>
                 <Link href="/track-order" className="hover:text-amber-400 transition-colors">
-                  Live Order Tracker
+                  Fuatilia Oda Yako
                 </Link>
               </li>
               <li>
-                <Link href="/favorites" className="hover:text-amber-400 transition-colors">
-                  Saved Favorites
+                <Link href="/delivery" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                  <span>Eneo la Delivery (Map Radius)</span>
+                  <span className="text-[9px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-black">RADIUS</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/corporate" className="hover:text-amber-400 transition-colors">
+                  Milo ya Ofisi & Makampuni
+                </Link>
+              </li>
+              <li>
+                <Link href="/advertise" className="text-[#3B82F6] hover:underline flex items-center gap-1">
+                  <span>Tangaza Nasi (Partner Ads)</span>
+                  <Sparkles className="w-3 h-3 text-amber-400" />
                 </Link>
               </li>
               <li>
                 <Link href="/login" className="text-slate-400 hover:text-white transition-colors">
-                  Staff & Kitchen Portal
+                  Mlango wa Wafanyakazi (Staff)
                 </Link>
               </li>
             </ul>
@@ -81,20 +93,20 @@ export default function CustomerFooter() {
 
           {/* Store Hours & Delivery */}
           <div className="space-y-3">
-            <h3 className="text-white font-bold text-xs uppercase tracking-wider">Service Hours & Delivery</h3>
+            <h3 className="text-white font-bold text-xs uppercase tracking-wider">Masaa ya Kazi & Usafirishaji</h3>
             <div className="space-y-3 text-xs sm:text-sm">
               <div className="flex items-start gap-2.5">
-                <Clock className="w-4 h-4 text-[#0078D7] mt-0.5 shrink-0" />
+                <Clock className="w-4 h-4 text-[#0062C3] mt-0.5 shrink-0" />
                 <div>
-                  <div className="text-slate-200 font-semibold">Open 7 Days a Week</div>
-                  <div className="text-slate-400 text-xs">8:00 AM – 11:00 PM (Daily)</div>
+                  <div className="text-slate-200 font-semibold">Wazi Siku Zote 7 za Wiki</div>
+                  <div className="text-slate-400 text-xs">Saa 2:00 Asubuhi – Saa 5:00 Usiku</div>
                 </div>
               </div>
               <div className="flex items-start gap-2.5 pt-1">
                 <Truck className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                 <div>
-                  <div className="text-slate-200 font-semibold">City-Wide Express Dispatch</div>
-                  <div className="text-slate-400 text-xs">Fast delivery across Kariakoo, CBD, Kinondoni, Sinza & beyond</div>
+                  <div className="text-slate-200 font-semibold">Usafirishaji wa Haraka Dar es Salaam</div>
+                  <div className="text-slate-400 text-xs">Kariakoo, Posta, Kinondoni, Sinza, Masaki, Ilala na maeneo yote</div>
                 </div>
               </div>
             </div>
@@ -102,7 +114,7 @@ export default function CustomerFooter() {
 
           {/* Contact & Location */}
           <div className="space-y-3">
-            <h3 className="text-white font-bold text-xs uppercase tracking-wider">Location & Orders</h3>
+            <h3 className="text-white font-bold text-xs uppercase tracking-wider">Mahali & Mawasiliano</h3>
             <div className="space-y-2.5 text-xs sm:text-sm">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#E5002B] mt-0.5 shrink-0" />
@@ -122,7 +134,7 @@ export default function CustomerFooter() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-colors"
                 >
                   <MessageSquare className="w-4 h-4" />
-                  <span>WhatsApp Kitchen Order</span>
+                  <span>Agiza kwa WhatsApp</span>
                 </a>
               </div>
             </div>
