@@ -1,4 +1,5 @@
 import React from "react";
+import { redirect } from "next/navigation";
 import getDb from "@/lib/db";
 import type { PublicItem } from "@/app/api/public/menu/route";
 import CustomerNavbar from "@/components/customer/CustomerNavbar";
@@ -13,7 +14,9 @@ function getDealsData() {
   const db = getDb();
 
   const settings = (db.prepare("SELECT promotions_enabled FROM restaurant_settings WHERE id = 1").get() || { promotions_enabled: 0 }) as { promotions_enabled: number };
-  const promotions = settings.promotions_enabled === 1
+  const isEnabled = settings.promotions_enabled === 1;
+
+  const promotions = isEnabled
     ? (db.prepare("SELECT * FROM promotions WHERE active = 1 ORDER BY id ASC").all() as {
         id: number;
         code: string;
@@ -92,11 +95,15 @@ function getDealsData() {
     };
   });
 
-  return { promotions, dealItems };
+  return { promotions, dealItems, isEnabled };
 }
 
 export default function DealsPage() {
-  const { promotions, dealItems } = getDealsData();
+  const { promotions, dealItems, isEnabled } = getDealsData();
+
+  if (!isEnabled) {
+    redirect("/order");
+  }
 
   return (
     <CartProvider>

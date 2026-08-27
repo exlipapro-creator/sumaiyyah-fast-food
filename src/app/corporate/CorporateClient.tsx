@@ -898,7 +898,7 @@ export default function CorporateClient() {
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Catering Packages & Platters ({packages.length})
+                Catering Packages & Platters
               </button>
               <button
                 type="button"
@@ -909,7 +909,7 @@ export default function CorporateClient() {
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
-                A La Carte Dishes & Refreshments ({individualItems.length})
+                A La Carte Dishes & Refreshments
               </button>
             </div>
 

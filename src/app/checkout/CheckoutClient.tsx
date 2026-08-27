@@ -10,8 +10,8 @@ import {
   Store,
   Utensils,
   CreditCard,
-  Smartphone,
-  Banknote,
+  QrCode,
+  HandCoins,
   ShieldCheck,
   Clock,
   MapPin,
@@ -349,13 +349,13 @@ export default function CheckoutClient({ settings }: CheckoutClientProps) {
                     id: "mobile",
                     label: "Mobile Money",
                     sub: "M-Pesa / Tigo / Airtel",
-                    icon: Smartphone,
+                    icon: QrCode,
                   },
                   {
                     id: "cash",
                     label: "Cash on Delivery",
                     sub: "Pay driver or cashier",
-                    icon: Banknote,
+                    icon: HandCoins,
                   },
                   {
                     id: "card",
@@ -462,7 +462,7 @@ export default function CheckoutClient({ settings }: CheckoutClientProps) {
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-5 sticky top-24 shadow-sm">
             <h2 className="text-xs uppercase font-bold tracking-wider text-slate-800">
-              Order Summary ({items.reduce((s, i) => s + i.quantity, 0)} items)
+              Order Summary
             </h2>
 
             {/* Mini Items List */}

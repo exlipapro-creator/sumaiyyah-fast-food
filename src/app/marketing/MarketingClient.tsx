@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import StoreHoursAndTickerManager from "@/components/manager/StoreHoursAndTickerManager";
 import {
   Tag,
   Percent,
@@ -22,6 +23,7 @@ import {
   ShieldCheck,
   AlertCircle,
   Check,
+  Flame,
 } from "lucide-react";
 
 interface Promotion {
@@ -97,7 +99,7 @@ interface MarketingData {
 }
 
 export default function MarketingClient() {
-  const [activeTab, setActiveTab] = useState<"promotions" | "adsense" | "placements" | "campaigns">("promotions");
+  const [activeTab, setActiveTab] = useState<"promotions" | "adsense" | "placements" | "campaigns" | "ticker">("promotions");
   const [data, setData] = useState<MarketingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -544,6 +546,21 @@ export default function MarketingClient() {
               {data.stats.pending_campaigns_count} PENDING
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab("ticker")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl transition-colors shrink-0 ${
+            activeTab === "ticker"
+              ? "bg-slate-800 text-white border-b-2 border-[#0062C3]"
+              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+          }`}
+        >
+          <Flame className="w-4 h-4 text-amber-400" />
+          <span>Store Hours & Top Ticker</span>
+          <span className="bg-[#004B93] text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-bold">
+            LIVE RPC
+          </span>
         </button>
       </div>
 
@@ -1136,6 +1153,13 @@ export default function MarketingClient() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* TAB 5: STORE OPERATING HOURS & TOP Ticker                     */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {activeTab === "ticker" && (
+        <StoreHoursAndTickerManager />
       )}
 
       {/* ───────────────────────────────────────────────────────────── */}

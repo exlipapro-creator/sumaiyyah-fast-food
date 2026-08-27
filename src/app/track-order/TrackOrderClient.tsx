@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import DeliveryRadiusMap, { DELIVERY_ZONES, DeliveryZone } from "@/components/customer/DeliveryRadiusMap";
 import {
   Search,
   Clock,
   CheckCircle2,
-  ChefHat,
-  PackageCheck,
-  Truck,
+  Receipt,
   Flame,
+  Box,
+  Navigation2,
   Phone,
   MessageSquare,
   RotateCcw,
@@ -19,6 +20,12 @@ import {
   Calendar,
   AlertCircle,
   CookingPot,
+  Radar,
+  ArrowDown,
+  ShieldCheck,
+  Bike,
+  Building,
+  Sparkles,
 } from "lucide-react";
 
 interface OrderTrackingData {
@@ -77,6 +84,7 @@ export default function TrackOrderClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reordered, setReordered] = useState(false);
+  const [selectedMapZoneId, setSelectedMapZoneId] = useState<string>("kariakoo");
 
   const fetchOrder = async (query: string) => {
     if (!query.trim()) return;
@@ -94,6 +102,21 @@ export default function TrackOrderClient() {
         setOrder(null);
       } else {
         setOrder(data.order);
+        
+        // Auto-detect zone from delivery address
+        if (data.order?.delivery_address) {
+          const addr = data.order.delivery_address.toLowerCase();
+          const matched = DELIVERY_ZONES.find(
+            (z) =>
+              addr.includes(z.id) ||
+              addr.includes(z.name.toLowerCase()) ||
+              z.landmarks.some((l) => addr.includes(l.toLowerCase())) ||
+              addr.includes(z.swahiliName.toLowerCase())
+          );
+          if (matched) {
+            setSelectedMapZoneId(matched.id);
+          }
+        }
       }
     } catch (err) {
       setError("Failed to track order. Please try again.");
@@ -157,18 +180,31 @@ export default function TrackOrderClient() {
     }, 600);
   };
 
+  // Detect matching zone for currently tracked order
+  const activeMatchedZone = useMemo(() => {
+    if (!order?.delivery_address) return null;
+    const addr = order.delivery_address.toLowerCase();
+    return DELIVERY_ZONES.find(
+      (z) =>
+        addr.includes(z.id) ||
+        addr.includes(z.name.toLowerCase()) ||
+        z.landmarks.some((l) => addr.includes(l.toLowerCase())) ||
+        addr.includes(z.swahiliName.toLowerCase())
+    );
+  }, [order?.delivery_address]);
+
   // Steps definition
   const steps = [
-    { key: "confirmed", label: "Order Received", sub: "Kitchen has confirmed your order", icon: CheckCircle2 },
-    { key: "preparing", label: "Grilling & Cooking", sub: "Chef is preparing your fresh meal", icon: ChefHat },
-    { key: "ready", label: "Packed & Ready", sub: "Food is boxed and sealed hot", icon: PackageCheck },
+    { key: "confirmed", label: "Order Received", sub: "Kitchen confirmed & receipt generated", icon: Receipt },
+    { key: "preparing", label: "Grilling & Cooking", sub: "Chef preparing fresh sizzling meal", icon: Flame },
+    { key: "ready", label: "Packed & Sealed", sub: "Food boxed hot & insulated", icon: Box },
     {
       key: "out_for_delivery",
       label: order?.order_type === "delivery" ? "Out for Delivery" : "Ready for Counter Pickup",
-      sub: order?.order_type === "delivery" ? "Rider is heading to your address" : "Ready for collection at counter",
-      icon: Truck,
+      sub: order?.order_type === "delivery" ? "Rider en route with hot thermal bag" : "Ready for counter collection",
+      icon: Navigation2,
     },
-    { key: "delivered", label: "Completed / Delivered", sub: "Enjoy your delicious Sumaiyyah meal!", icon: CookingPot },
+    { key: "delivered", label: "Completed / Delivered", sub: "Enjoy your Sumaiyyah feast!", icon: CheckCircle2 },
   ];
 
   const getStepIndex = (status: string) => {
@@ -193,20 +229,29 @@ export default function TrackOrderClient() {
 
   const currentStepIndex = order ? getStepIndex(order.fulfillment_status) : 0;
 
+  const scrollToRadar = () => {
+    const el = document.getElementById("delivery-coverage-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
+    <div className="max-w-5xl mx-auto px-3.5 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
       
-      {/* Header & Lookup Input */}
-      <div className="text-center space-y-3">
+      {/* ─── 1. TRACK ORDER HEADER & INPUT ───────────────────────────────── */}
+      <section className="space-y-4 text-center">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EBF4FF] border border-blue-200 text-[#0062C3] text-xs font-bold uppercase tracking-wider">
           <Clock className="w-3.5 h-3.5" />
           <span>Real-Time Kitchen Progress</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 font-serif tracking-tight">
+        
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 font-serif tracking-tight">
           Track Your Live Order
         </h1>
-        <p className="text-slate-500 text-xs sm:text-sm max-w-md mx-auto">
-          Enter your Receipt Number (e.g. <span className="text-[#0062C3] font-mono font-bold">2026-0001</span>) or Phone Number to view live prep status.
+        
+        <p className="text-slate-500 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+          Enter your Receipt Number (e.g. <span className="text-[#0062C3] font-mono font-bold">2026-0001</span>) or Phone Number to view live kitchen prep, packaging, and rider transit status.
         </p>
 
         {/* Search input form */}
@@ -218,52 +263,57 @@ export default function TrackOrderClient() {
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
               placeholder="e.g. 2026-0001 or 0712345678"
-              className="w-full bg-white border border-slate-200 focus:border-[#0062C3] rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-colors shadow-sm"
+              className="w-full bg-white border border-slate-200 focus:border-[#0062C3] rounded-2xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-all shadow-sm"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="px-5 py-3 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-95"
+            className="px-5 py-3 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-2xl text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-60"
           >
             {loading ? "Searching..." : "Track"}
           </button>
         </form>
-      </div>
+      </section>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-5 rounded-2xl text-center text-sm flex flex-col items-center gap-2 max-w-md mx-auto">
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-5 rounded-2xl text-center text-sm flex flex-col items-center gap-2 max-w-md mx-auto animate-in fade-in">
           <AlertCircle className="w-6 h-6 text-rose-500" />
-          <span>{error}</span>
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
+      {/* ─── 2. ACTIVE ORDER STATUS CARD ─────────────────────────────────── */}
       {order && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
           
           {/* Main Status Hero Card */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 shadow-sm relative overflow-hidden">
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xs relative overflow-hidden">
             
             {/* Header info row */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#0062C3]">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#0062C3] bg-blue-50 px-2.5 py-0.5 rounded-md">
                     Receipt #{order.receipt_number}
                   </span>
                   <span className="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
                     {order.order_type}
                   </span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
+                
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1.5">
                   {order.fulfillment_status === "delivered"
                     ? "Order Delivered & Completed!"
                     : order.fulfillment_status === "cancelled" || order.status === "voided"
                     ? "Order Cancelled / Voided"
                     : order.is_scheduled
                     ? "Scheduled Catering Confirmed"
-                    : "Order is Being Prepared Fresh"}
+                    : order.fulfillment_status === "out_for_delivery"
+                    ? "Rider is Out for Delivery to Your Location!"
+                    : "Order is Being Prepared Fresh in Kitchen"}
                 </h2>
+                
                 {order.is_scheduled === 1 && (
                   <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold text-amber-800">
                     <Calendar className="w-3.5 h-3.5 text-amber-600" />
@@ -275,15 +325,47 @@ export default function TrackOrderClient() {
               </div>
 
               <div className="text-left sm:text-right">
-                <span className="text-xs text-slate-500 block">Total Paid</span>
-                <span className="text-xl font-bold font-mono text-[#004B93]">
+                <span className="text-xs text-slate-500 block">Total Amount</span>
+                <span className="text-2xl font-black font-mono text-[#004B93]">
                   TZS {order.total_tsh.toLocaleString()}
                 </span>
-                <span className="text-[10px] text-slate-400 uppercase block mt-0.5 font-semibold">
+                <span className="text-[11px] text-slate-400 uppercase block mt-0.5 font-semibold">
                   Via {order.payment_method}
                 </span>
               </div>
             </div>
+
+            {/* Synchronized Delivery Transit Corridor Indicator (If Delivery) */}
+            {order.order_type === "delivery" && order.delivery_address && (
+              <div className="bg-[#F0F7FF] border border-[#0062C3]/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#0062C3] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Bike className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>Delivery Corridor:</span>
+                      <span className="text-[#0062C3]">Jiko Kuu (Msimbazi) &rarr; {activeMatchedZone ? activeMatchedZone.name : order.delivery_address}</span>
+                    </div>
+                    <p className="text-slate-500 text-[11px]">
+                      {activeMatchedZone
+                        ? `Transit radius ~${activeMatchedZone.distanceKm} km (${activeMatchedZone.estimatedTimeMin} speed via thermal pack)`
+                        : "Express city dispatch via insulated bike container"}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={scrollToRadar}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-[#0062C3] font-bold rounded-xl text-xs shadow-2xs transition-colors shrink-0 cursor-pointer"
+                >
+                  <Radar className="w-3.5 h-3.5" />
+                  <span>View on Delivery Radar</span>
+                  <ArrowDown className="w-3 h-3" />
+                </button>
+              </div>
+            )}
 
             {/* Visual Timeline Stepper */}
             {order.fulfillment_status !== "cancelled" && order.status !== "voided" ? (
@@ -324,7 +406,7 @@ export default function TrackOrderClient() {
                 </div>
               </div>
             ) : (
-              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700 text-xs text-center">
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700 text-xs text-center font-medium">
                 This order was marked as cancelled or voided. If you have questions, please reach out to our staff.
               </div>
             )}
@@ -344,7 +426,7 @@ export default function TrackOrderClient() {
               <button
                 type="button"
                 onClick={handleReorder}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors w-full sm:w-auto justify-center"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors w-full sm:w-auto justify-center cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>{reordered ? "Loaded into Cart!" : "Reorder These Items"}</span>
@@ -352,13 +434,13 @@ export default function TrackOrderClient() {
             </div>
           </div>
 
-          {/* Itemized Receipt Details */}
+          {/* Itemized Receipt & Delivery Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Items Breakdown */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
               <h3 className="text-xs uppercase font-bold tracking-wider text-slate-700">
-                Itemized Dishes ({order.items.length})
+                Itemized Dishes
               </h3>
               <div className="divide-y divide-slate-100 space-y-2 text-xs">
                 {order.items.map((item) => (
@@ -414,7 +496,7 @@ export default function TrackOrderClient() {
             </div>
 
             {/* Delivery & Customer Info */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
               <h3 className="text-xs uppercase font-bold tracking-wider text-slate-700">
                 Delivery & Contact Info
               </h3>
@@ -430,7 +512,7 @@ export default function TrackOrderClient() {
                 {order.delivery_address && (
                   <div>
                     <span className="text-slate-400 block">Delivery Address / Dining</span>
-                    <span className="text-slate-800">{order.delivery_address}</span>
+                    <span className="text-slate-800 font-medium">{order.delivery_address}</span>
                   </div>
                 )}
                 {order.notes && (
@@ -452,8 +534,18 @@ export default function TrackOrderClient() {
             </div>
 
           </div>
-        </div>
+        </section>
       )}
+
+      {/* ─── 3. SYNCHRONIZED DELIVERY COVERAGE & TRANSIT RADAR ────────────── */}
+      <section className="space-y-4 pt-2">
+        <DeliveryRadiusMap
+          showTitle={true}
+          activeZoneId={selectedMapZoneId}
+          highlightAddress={order?.delivery_address}
+          onZoneSelect={(zone) => setSelectedMapZoneId(zone.id)}
+        />
+      </section>
 
     </div>
   );

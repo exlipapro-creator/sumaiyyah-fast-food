@@ -47,7 +47,6 @@ export default function OrderClient({
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [dietaryFilter, setDietaryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"featured" | "price_asc" | "price_desc" | "prep_time">("featured");
 
   const [selectedItem, setSelectedItem] = useState<PublicItem | null>(null);
@@ -92,11 +91,6 @@ export default function OrderClient({
           const matchCat = item.category_name.toLowerCase().includes(q);
           if (!matchName && !matchDesc && !matchCat) return false;
         }
-        // Dietary filter
-        if (dietaryFilter === "combos" && !item.is_deal) return false;
-        if (dietaryFilter === "spicy" && item.spiciness.toLowerCase() === "mild") return false;
-        if (dietaryFilter === "halal" && !item.dietary_tags?.includes("Halal")) return false;
-        if (dietaryFilter === "vegetarian" && !item.dietary_tags?.includes("Vegetarian")) return false;
 
         return true;
       })
@@ -109,7 +103,7 @@ export default function OrderClient({
         if (!a.is_featured && b.is_featured) return 1;
         return 0;
       });
-  }, [items, selectedCategory, searchQuery, dietaryFilter, sortBy]);
+  }, [items, selectedCategory, searchQuery, sortBy]);
 
   return (
     <div className="min-h-[80vh] pb-28 pt-4 sm:pt-6">
@@ -123,7 +117,7 @@ export default function OrderClient({
                 Orodha ya Chakula & Vinywaji
               </h1>
               <p className="text-slate-500 text-xs mt-0.5">
-                Milo {filteredAndSortedItems.length} tayari kuandaliwa • Dakika 15–25 Mlangoni
+                Chakula kibichi na moto kilichoandaliwa kwa ubora • Dakika 15–25 Mlangoni
               </p>
             </div>
 
@@ -134,7 +128,7 @@ export default function OrderClient({
                 className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#EBF4FF] text-[#0062C3] hover:bg-blue-100 border border-blue-200/60 text-xs font-bold transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>Punguzo {promotions.length} Lipo Wazi</span>
+                <span>Ofa za Punguzo</span>
               </Link>
             )}
           </div>
@@ -147,7 +141,7 @@ export default function OrderClient({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tafuta pilau, biryani, chipsi yai, mishikaki, soda, juisi..."
+                placeholder="Tafuta chakula au kinywaji..."
                 className="w-full bg-white border border-slate-200 focus:border-[#0062C3] rounded-xl pl-9 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none shadow-2xs transition-colors"
               />
               {searchQuery && (
@@ -179,63 +173,35 @@ export default function OrderClient({
         </div>
 
         {/* ─── Category Tabs ──────────────────────────────────────────────── */}
-        <div className="space-y-2">
-          {/* Main Category Horizontal Scroll */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <button
-              type="button"
-              onClick={() => setSelectedCategory("all")}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-                selectedCategory === "all"
-                  ? "bg-[#0062C3] text-white shadow-2xs"
-                  : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200/90"
-              }`}
-            >
-              Vyote ({items.length})
-            </button>
-            {categories.map((cat) => {
-              const count = items.filter((i) => i.category_id === cat.id).length;
-              const isSelected = selectedCategory.toLowerCase() === cat.name.toLowerCase();
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat.name)}
-                  className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-                    isSelected
-                      ? "bg-[#0062C3] text-white shadow-2xs"
-                      : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200/90"
-                  }`}
-                >
-                  {cat.name} ({count})
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Sub Dietary Filters */}
-          <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 text-xs scrollbar-none">
-            {[
-              { id: "all", label: "Milo Yote" },
-              { id: "combos", label: "🔥 Ofa za Pamoja" },
-              { id: "spicy", label: "🌶️ Ya Pilipili" },
-              { id: "halal", label: "✨ Halal 100%" },
-              { id: "vegetarian", label: "🥗 Mbogamboga" },
-            ].map((f) => (
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setSelectedCategory("all")}
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+              selectedCategory === "all"
+                ? "bg-[#0062C3] text-white shadow-2xs"
+                : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200/90"
+            }`}
+          >
+            Vyote
+          </button>
+          {categories.map((cat) => {
+            const isSelected = selectedCategory.toLowerCase() === cat.name.toLowerCase();
+            return (
               <button
-                key={f.id}
+                key={cat.id}
                 type="button"
-                onClick={() => setDietaryFilter(f.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
-                  dietaryFilter === f.id
-                    ? "bg-[#0062C3] text-white shadow-2xs font-bold"
-                    : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
+                onClick={() => setSelectedCategory(cat.name)}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+                  isSelected
+                    ? "bg-[#0062C3] text-white shadow-2xs"
+                    : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200/90"
                 }`}
               >
-                {f.label}
+                {cat.name}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         {/* ─── Menu In-Feed Ad Slot (Direct / AdSense) ───────────────────────── */}
@@ -255,11 +221,10 @@ export default function OrderClient({
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("all");
-                setDietaryFilter("all");
               }}
               className="px-4 py-2 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-lg text-xs font-bold transition-colors shadow-2xs"
             >
-              Onyesha Milo Yote
+              Onyesha Vyakula Vyote
             </button>
           </div>
         ) : (

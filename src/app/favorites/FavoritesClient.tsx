@@ -34,7 +34,7 @@ export default function FavoritesClient({ allItems }: FavoritesClientProps) {
           <span>Personal Shortlist</span>
         </div>
         <h1 className="text-xl sm:text-3xl font-black text-slate-900 font-serif tracking-tight mt-0.5">
-          Saved Favorite Dishes ({favoriteItems.length})
+          Vyakula Ulivyohifadhi
         </h1>
         <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
           Quickly re-order your favorite dishes, sides, and refreshing drinks with one tap.

@@ -382,7 +382,7 @@ export default function CartClient({ availablePromotions }: CartClientProps) {
               )}
 
               <div className="flex items-center justify-between text-slate-600">
-                <span>Usafirishaji ({fulfillmentType === "delivery" ? "Gharama ya Usafiri" : "Kujichukulia / Kula Hapa"})</span>
+                <span>Usafirishaji</span>
                 <span className="font-mono font-semibold text-slate-900">
                   {deliveryFee > 0 ? `TZS ${deliveryFee.toLocaleString()}` : "BURE"}
                 </span>

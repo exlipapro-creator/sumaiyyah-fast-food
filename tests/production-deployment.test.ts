@@ -250,7 +250,7 @@ describe("Production Deployment & Operational Verification", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: [{ menu_item_id: item.id, quantity: 2 }],
+          items: [{ menu_item_id: item.id, quantity: 4 }],
           order_type: "delivery",
           customer_name: "Fatma Ally",
           customer_phone: "+255 777 123 456",

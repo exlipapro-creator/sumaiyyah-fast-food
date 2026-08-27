@@ -1,7 +1,9 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
+import { useHeaderTicker } from "@/lib/useHeaderTicker";
 import {
-  CookingPot,
   Phone,
   MapPin,
   Clock,
@@ -10,11 +12,14 @@ import {
   MessageSquare,
   Truck,
   CreditCard,
-  Smartphone,
-  CheckCircle2,
+  QrCode,
+  HandCoins,
 } from "lucide-react";
 
 export default function CustomerFooter() {
+  const { tickerData } = useHeaderTicker();
+  const isDealsEnabled = tickerData?.promotions_enabled;
+
   return (
     <footer className="bg-[#0F172A] border-t border-slate-800 text-slate-400 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
@@ -23,11 +28,11 @@ export default function CustomerFooter() {
           {/* Brand Col */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0062C3] via-[#004B93] to-[#E5002B] p-0.5 shadow-md">
-                <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center">
-                  <CookingPot className="w-5 h-5 text-[#E5002B]" />
-                </div>
-              </div>
+              <img
+                src="/assets/logo.png"
+                alt="Sumaiyyah Fast Food"
+                className="w-11 h-11 rounded-2xl object-cover border border-slate-700 shadow-md"
+              />
               <div className="flex flex-col">
                 <span className="font-extrabold text-base tracking-tight text-white uppercase leading-none font-serif">
                   SUMAIYYAH
@@ -55,12 +60,14 @@ export default function CustomerFooter() {
                   Orodha ya Chakula & Kuagiza
                 </Link>
               </li>
-              <li>
-                <Link href="/deals" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
-                  <span>Ofa & Milo ya Pamoja</span>
-                  <span className="text-[9px] bg-[#E5002B] text-white px-1.5 py-0.5 rounded font-black">PUNGUZO</span>
-                </Link>
-              </li>
+              {isDealsEnabled && (
+                <li>
+                  <Link href="/deals" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+                    <span>Ofa & Milo ya Pamoja</span>
+                    <span className="text-[9px] bg-[#E5002B] text-white px-1.5 py-0.5 rounded font-black">PUNGUZO</span>
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link href="/track-order" className="hover:text-amber-400 transition-colors">
                   Fuatilia Oda Yako
@@ -149,7 +156,7 @@ export default function CustomerFooter() {
           </div>
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
             <span className="flex items-center gap-1">
-              <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+              <QrCode className="w-3.5 h-3.5 text-emerald-400" />
               <span>M-Pesa / Tigo Pesa / Airtel</span>
             </span>
             <span>•</span>

@@ -1,24 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { PublicItem } from "@/app/api/public/menu/route";
 import ProductCard from "@/components/customer/ProductCard";
 import ItemCustomizerModal from "@/components/customer/ItemCustomizerModal";
+import HeroSection from "@/components/customer/HeroSection";
 import AdSlot from "@/components/ads/AdSlot";
-import DeliveryRadiusMap from "@/components/customer/DeliveryRadiusMap";
 import { useCart } from "@/context/CartContext";
 import {
   Compass,
-  Route,
   Search,
   Clock,
   Sparkles,
-  ShieldCheck,
   ChevronRight,
-  Truck,
-  CookingPot,
   Flame,
   Tag,
   Check,
@@ -26,7 +22,7 @@ import {
   ArrowRight,
   Building2,
   MapPin,
-  Navigation,
+  CookingPot,
 } from "lucide-react";
 
 interface HomeClientProps {
@@ -83,141 +79,38 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
   return (
     <div className="space-y-8 sm:space-y-12 pb-24 sm:pb-16">
       
-      {/* ─── COMPACT APP HERO: FAST FOOD DISCOVERY ──────────────────────────── */}
-      <section className="bg-gradient-to-b from-[#EBF4FF]/80 via-[#F7FAFD] to-[#F7FAFD] pt-6 sm:pt-10 pb-8 sm:pb-12 border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-3.5 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
-            
-            {/* Left Content */}
-            <div className="lg:col-span-7 space-y-4 text-center lg:text-left">
-              
-              {/* Status Pill with City Center Delivery highlight */}
-              <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-slate-700 text-xs font-semibold">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="font-bold text-[#004B93]">JIKO LIKO WAZI</span>
-                <span className="text-slate-300">•</span>
-                <a
-                  href="#delivery-radius-section"
-                  className="text-[#0062C3] hover:underline font-bold flex items-center gap-1"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-[#0062C3]" />
-                  <span>Kariakoo, Upanga, Ilala, Magomeni, Posta & City Center</span>
-                  <ChevronRight className="w-3 h-3" />
-                </a>
-              </div>
+      {/* ─── MINIMALIST HOT PLATE HERO (OPTION A) ─────────────────────────── */}
+      <HeroSection
+        onPlateClick={() => {
+          if (displayFeatured[0]) {
+            openCustomizer(displayFeatured[0]);
+          } else {
+            router.push("/order");
+          }
+        }}
+        dishName={displayFeatured[0]?.name || "Hot Chips Mayai & Mishkaki"}
+      />
 
-              {/* Punchy Headline requested by user */}
-              <div className="space-y-2">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.15]">
-                  Chakula kitamu, <br className="hidden sm:inline" />
-                  <span className="text-[#0062C3]">bei chee.</span>
-                </h1>
-                <p className="text-slate-700 text-xs sm:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                  Mlo safi ulioandaliwa kwa ubora na viungo halisi, kinakufikia popote ulipo around city center.
-                </p>
-              </div>
-
-              {/* Quick Search Bar */}
-              <form onSubmit={handleSearchSubmit} className="max-w-md mx-auto lg:mx-0 pt-1">
-                <div className="relative flex items-center">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tafuta pilau, biryani, chipsi yai, mishikaki, juisi..."
-                    className="w-full bg-white border border-slate-300 focus:border-[#0062C3] rounded-xl pl-10 pr-24 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none shadow-xs transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3 sm:px-4 py-1.5 bg-[#0062C3] hover:bg-[#004B93] text-white text-xs font-bold rounded-lg transition-colors shadow-2xs"
-                  >
-                    Tafuta
-                  </button>
-                </div>
-              </form>
-
-              {/* Direct Quick Actions */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-1">
-                <Link
-                  href="/order"
-                  id="home-explore-btn"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0062C3] hover:bg-[#004B93] text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-95"
-                >
-                  <Compass className="w-4 h-4" />
-                  <span>Agiza Sasa</span>
-                </Link>
-                <a
-                  href="#delivery-radius-section"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-2xs"
-                >
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Ramani ya Delivery</span>
-                </a>
-                <Link
-                  href="/corporate"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-2xs"
-                >
-                  <Building2 className="w-3.5 h-3.5 text-[#0062C3]" />
-                  <span>Milo ya Ofisi</span>
-                </Link>
-              </div>
-
-            </div>
-
-            {/* Right Card: Quick Deal / Chef Pick Highlight */}
-            {displayFeatured[0] && (
-              <div className="lg:col-span-5">
-                <div
-                  onClick={() => openCustomizer(displayFeatured[0])}
-                  className="relative mx-auto max-w-sm bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group"
-                >
-                  <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden bg-slate-100 mb-3">
-                    {displayFeatured[0].image_url ? (
-                      <img
-                        src={displayFeatured[0].image_url}
-                        alt={displayFeatured[0].name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-100">
-                        <CookingPot className="w-10 h-10 text-[#0062C3]" />
-                      </div>
-                    )}
-                    <div className="absolute top-2 left-2">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-white bg-[#0062C3] px-2.5 py-0.5 rounded-md shadow-xs">
-                        ⭐ Chef&apos;s Pick
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] uppercase font-mono font-bold text-[#0062C3] block">
-                        {displayFeatured[0].category_name}
-                      </span>
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug group-hover:text-[#0062C3] transition-colors">
-                        {displayFeatured[0].name}
-                      </h3>
-                      <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
-                        {displayFeatured[0].description}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-sm font-black font-mono text-[#004B93]">
-                        TZS {displayFeatured[0].price_tsh.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
+      {/* ─── SEARCH & DISCOVERY BAR (OPTION A: DOCKED DIRECTLY UNDER HERO) ── */}
+      <section className="max-w-xl mx-auto px-3.5 sm:px-6 -mt-2">
+        <form onSubmit={handleSearchSubmit} className="w-full">
+          <div className="relative flex items-center">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tafuta chakula au kinywaji..."
+              className="w-full bg-white border border-slate-200/90 focus:border-[#0062C3] focus:ring-2 focus:ring-[#0062C3]/10 rounded-2xl pl-10 pr-24 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none shadow-xs transition-all"
+            />
+            <button
+              type="submit"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-3.5 py-1.5 bg-[#0062C3] hover:bg-[#004B93] text-white text-xs font-bold rounded-xl transition-all shadow-2xs active:scale-95"
+            >
+              Tafuta
+            </button>
           </div>
-        </div>
+        </form>
       </section>
 
       {/* ─── ADVERTISEMENT BANNER (SPONSORED / ADSENSE) ──────────────────── */}
@@ -237,10 +130,9 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
                 : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
             }`}
           >
-            All Items ({items.length})
+            Vyote
           </button>
           {categories.map((cat) => {
-            const count = items.filter((i) => i.category_id === cat.id).length;
             const isSelected = activeCategory.toLowerCase() === cat.name.toLowerCase();
             return (
               <button
@@ -253,7 +145,7 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
                     : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
                 }`}
               >
-                {cat.name} ({count})
+                {cat.name}
               </button>
             );
           })}
@@ -338,15 +230,10 @@ export default function HomeClient({ categories, items, promotions }: HomeClient
             href="/order"
             className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 rounded-xl text-xs sm:text-sm font-bold transition-colors shadow-2xs"
           >
-            <span>Explore All {items.length} Menu Items</span>
+            <span>Tazama Menu Yote</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#0062C3]" />
           </Link>
         </div>
-      </section>
-
-      {/* ─── INTERACTIVE DELIVERY RADIUS & COVERAGE MAP ───────────────────────── */}
-      <section className="max-w-7xl mx-auto px-3.5 sm:px-6">
-        <DeliveryRadiusMap showTitle={true} />
       </section>
 
       {/* ─── MINIMAL TRUST ASSURANCE STRIP ───────────────────────────────────── */}

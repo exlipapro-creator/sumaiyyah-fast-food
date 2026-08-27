@@ -352,6 +352,31 @@ function initSchema(db: Database.Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_ad_campaigns_status ON ad_campaigns(status);
     CREATE INDEX IF NOT EXISTS idx_ad_campaigns_placement ON ad_campaigns(placement_key);
+
+    CREATE TABLE IF NOT EXISTS store_settings (
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      is_manual_override INTEGER NOT NULL DEFAULT 0,
+      manual_status TEXT NOT NULL DEFAULT 'OPEN' CHECK(manual_status IN ('OPEN', 'CLOSED')),
+      opening_time TEXT NOT NULL DEFAULT '08:00:00',
+      closing_time TEXT NOT NULL DEFAULT '23:00:00',
+      timezone TEXT NOT NULL DEFAULT 'Africa/Dar_es_Salaam',
+      default_fallback_text TEXT NOT NULL DEFAULT 'Top Kitchen Live — Fresh Meals & Juices Delivered Daily across Dar es Salaam',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      CONSTRAINT single_row CHECK (id = 1)
+    );
+
+    CREATE TABLE IF NOT EXISTS announcements (
+      id TEXT PRIMARY KEY,
+      text TEXT NOT NULL,
+      highlight TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      priority INTEGER NOT NULL DEFAULT 1,
+      start_time TEXT,
+      end_time TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      created_by INTEGER REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(is_active, priority);
   `);
 
   // Migrate existing databases that predate later columns/tables.
@@ -556,6 +581,7 @@ function initSchema(db: Database.Database) {
   seed(db);
   seedSettingsAndPromos(db);
   seedAdPlacements(db);
+  seedStoreHoursAndAnnouncements(db);
   enrichMenuItems(db);
   seedCorporateData(db);
 }
@@ -877,12 +903,22 @@ function enrichMenuItems(db: Database.Database) {
 }
 
 function syncSwahiliMenu(db: Database.Database) {
-  // Ensure the 4 primary Swahili categories exist
+  // Normalize any previous verbose category names
+  try {
+    db.exec(`
+      UPDATE categories SET name = 'Milo Mikuu' WHERE name LIKE 'Milo Mikuu%';
+      UPDATE categories SET name = 'Chipsi & Mshikaki' WHERE name LIKE 'Chipsi & Mshikaki%';
+      UPDATE categories SET name = 'Vinywaji Baridi' WHERE name LIKE 'Vinywaji Baridi%';
+      UPDATE categories SET name = 'Juisi & Matunda' WHERE name LIKE 'Juisi & Matunda%';
+    `);
+  } catch {}
+
+  // Ensure the 4 primary Swahili categories exist with clean, concise names
   const requiredCategories = [
-    { name: "Milo Mikuu (Rice, Pilau & Ugali)", sort_order: 1 },
-    { name: "Chipsi & Mshikaki (Chips & Grill)", sort_order: 2 },
-    { name: "Vinywaji Baridi (Sodas & Water)", sort_order: 3 },
-    { name: "Juisi & Matunda (Fresh Juices & Fruits)", sort_order: 4 },
+    { name: "Milo Mikuu", sort_order: 1 },
+    { name: "Chipsi & Mshikaki", sort_order: 2 },
+    { name: "Vinywaji Baridi", sort_order: 3 },
+    { name: "Juisi & Matunda", sort_order: 4 },
   ];
 
   for (const cat of requiredCategories) {
@@ -1797,6 +1833,226 @@ function seedCorporateData(db: Database.Database) {
   }
 }
 
+export interface StoreSettings {
+  id: number;
+  is_manual_override: number; // 0 or 1
+  manual_status: "OPEN" | "CLOSED";
+  opening_time: string; // "08:00:00"
+  closing_time: string; // "23:00:00"
+  timezone: string; // "Africa/Dar_es_Salaam"
+  default_fallback_text: string;
+  updated_at: string;
+}
+
+export interface Announcement {
+  id: string;
+  text: string;
+  highlight?: string | null;
+  is_active: number; // 0 or 1
+  priority: number;
+  start_time?: string | null;
+  end_time?: string | null;
+  created_at: string;
+  created_by?: number | null;
+}
+
+export interface HeaderTickerData {
+  is_open: boolean;
+  status_label: "LIVE" | "CLOSED";
+  default_fallback_text: string;
+  opening_time: string;
+  closing_time: string;
+  timezone: string;
+  is_manual_override: boolean;
+  manual_status: "OPEN" | "CLOSED";
+  current_local_time: string;
+  promotions_enabled: boolean;
+  promotions_count: number;
+  announcements: {
+    id: string;
+    text: string;
+    highlight?: string | null;
+    priority: number;
+    is_active: boolean;
+    start_time?: string | null;
+    end_time?: string | null;
+  }[];
+}
+
+function seedStoreHoursAndAnnouncements(db: Database.Database) {
+  // Ensure store_settings row 1 exists
+  const settingsRow = db.prepare("SELECT * FROM store_settings WHERE id = 1").get() as StoreSettings | undefined;
+  if (!settingsRow) {
+    db.prepare(`
+      INSERT INTO store_settings (id, is_manual_override, manual_status, opening_time, closing_time, timezone, default_fallback_text)
+      VALUES (1, 0, 'OPEN', '08:00:00', '23:00:00', 'Africa/Dar_es_Salaam', 'Top Kitchen Live — Fresh Meals & Juices Delivered Daily across Dar es Salaam')
+    `).run();
+  }
+
+  // Seed default high-value announcements if none exist
+  const annCount = db.prepare("SELECT COUNT(*) as n FROM announcements").get() as { n: number };
+  if (annCount.n === 0) {
+    const initialAnnouncements = [
+      {
+        id: "ann_1_grill_live",
+        text: "TOP KITCHEN LIVE: Grill & Tandoori Wazi Sasa",
+        highlight: "Moto & Safi",
+        priority: 1,
+      },
+      {
+        id: "ann_2_express_delivery",
+        text: "Express Bike Delivery: Kariakoo, Posta, Upanga, Ilala, Kisutu & Magomeni",
+        highlight: "10-25 Mins",
+        priority: 2,
+      },
+      {
+        id: "ann_3_operating_hours",
+        text: "Jiko Operating Hours: 8:00 AM – 11:00 PM Kila Siku",
+        highlight: "Dar es Salaam CBD",
+        priority: 3,
+      },
+      {
+        id: "ann_4_corporate_catering",
+        text: "Corporate Office Catering & Scheduled Lunch Subsidy Accounts",
+        highlight: "B2B Portal Active",
+        priority: 4,
+      },
+      {
+        id: "ann_5_karibu_discount",
+        text: "Special Welcome Offer: 10% OFF Discount on Your First Order",
+        highlight: "Promo: KARIBU10",
+        priority: 5,
+      },
+      {
+        id: "ann_6_whatsapp_hotline",
+        text: "Direct Kitchen WhatsApp & Fast Rider Dispatch Line",
+        highlight: "+255 700 000 000",
+        priority: 6,
+      },
+    ];
+
+    const insertAnn = db.prepare(`
+      INSERT INTO announcements (id, text, highlight, is_active, priority, start_time, end_time, created_at)
+      VALUES (?, ?, ?, 1, ?, datetime('now'), NULL, datetime('now'))
+    `);
+
+    for (const ann of initialAnnouncements) {
+      insertAnn.run(ann.id, ann.text, ann.highlight, ann.priority);
+    }
+  }
+}
+
+/**
+ * Computes live store status and returns active announcements
+ * Mirroring the Supabase Postgres RPC function `get_header_ticker_data()`
+ */
+export function getHeaderTickerData(db: Database.Database): HeaderTickerData {
+  let settings = db.prepare("SELECT * FROM store_settings WHERE id = 1").get() as StoreSettings | undefined;
+  if (!settings) {
+    db.prepare(`
+      INSERT INTO store_settings (id, is_manual_override, manual_status, opening_time, closing_time, timezone, default_fallback_text)
+      VALUES (1, 0, 'OPEN', '08:00:00', '23:00:00', 'Africa/Dar_es_Salaam', 'Top Kitchen Live — Fresh Meals & Juices Delivered Daily across Dar es Salaam')
+    `).run();
+    settings = db.prepare("SELECT * FROM store_settings WHERE id = 1").get() as StoreSettings;
+  }
+
+  const timezone = settings.timezone || "Africa/Dar_es_Salaam";
+
+  // Calculate current time in the configured timezone
+  const now = new Date();
+  let localTimeString = "12:00:00";
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).formatToParts(now);
+
+    const hour = parts.find((p) => p.type === "hour")?.value || "12";
+    const minute = parts.find((p) => p.type === "minute")?.value || "00";
+    const second = parts.find((p) => p.type === "second")?.value || "00";
+    localTimeString = `${hour}:${minute}:${second}`;
+  } catch (err) {
+    // Fallback to UTC+3 (Dar es Salaam standard time)
+    const utcHours = now.getUTCHours() + 3;
+    const hours = (utcHours % 24).toString().padStart(2, "0");
+    const minutes = now.getUTCMinutes().toString().padStart(2, "0");
+    const seconds = now.getUTCSeconds().toString().padStart(2, "0");
+    localTimeString = `${hours}:${minutes}:${seconds}`;
+  }
+
+  // Normalize time strings to HH:MM:SS for robust string comparison
+  const normalizeTime = (t: string) => {
+    const p = t.trim().split(":");
+    const h = (p[0] || "0").padStart(2, "0");
+    const m = (p[1] || "0").padStart(2, "0");
+    const s = (p[2] || "0").padStart(2, "0");
+    return `${h}:${m}:${s}`;
+  };
+
+  const curTime = normalizeTime(localTimeString);
+  const openTime = normalizeTime(settings.opening_time || "08:00:00");
+  const closeTime = normalizeTime(settings.closing_time || "23:00:00");
+
+  let isOpen = false;
+  if (Boolean(settings.is_manual_override)) {
+    isOpen = settings.manual_status === "OPEN";
+  } else {
+    if (openTime <= closeTime) {
+      // Standard daytime schedule (e.g. 08:00:00 to 23:00:00)
+      isOpen = curTime >= openTime && curTime < closeTime;
+    } else {
+      // Overnight schedule (e.g. 20:00:00 to 04:00:00)
+      isOpen = curTime >= openTime || curTime < closeTime;
+    }
+  }
+
+  // Query active announcements valid right now
+  const rawAnnouncements = db.prepare(`
+    SELECT id, text, highlight, priority, is_active, start_time, end_time
+    FROM announcements
+    WHERE is_active = 1
+      AND (start_time IS NULL OR start_time <= datetime('now'))
+      AND (end_time IS NULL OR end_time >= datetime('now'))
+    ORDER BY priority ASC, created_at DESC
+  `).all() as (Announcement & { is_active: number })[];
+
+  const formattedAnnouncements = rawAnnouncements.map((a) => ({
+    id: a.id,
+    text: a.text,
+    highlight: a.highlight || null,
+    priority: a.priority,
+    is_active: Boolean(a.is_active),
+    start_time: a.start_time || null,
+    end_time: a.end_time || null,
+  }));
+
+  // Check restaurant settings for master promotion switch
+  const rawRestSettings = db.prepare("SELECT promotions_enabled FROM restaurant_settings WHERE id = 1").get() as { promotions_enabled?: number } | undefined;
+  const isPromosEnabled = rawRestSettings?.promotions_enabled === 1;
+  const activePromosCount = isPromosEnabled
+    ? ((db.prepare("SELECT COUNT(*) as cnt FROM promotions WHERE active = 1").get() as { cnt: number })?.cnt || 0)
+    : 0;
+
+  return {
+    is_open: isOpen,
+    status_label: isOpen ? "LIVE" : "CLOSED",
+    default_fallback_text: settings.default_fallback_text || "Top Kitchen Live — Fresh Meals & Juices Delivered Daily",
+    opening_time: settings.opening_time,
+    closing_time: settings.closing_time,
+    timezone: settings.timezone,
+    is_manual_override: Boolean(settings.is_manual_override),
+    manual_status: settings.manual_status,
+    current_local_time: localTimeString,
+    promotions_enabled: isPromosEnabled,
+    promotions_count: activePromosCount,
+    announcements: formattedAnnouncements,
+  };
+}
+
 export default getDb;
+
 
 
