@@ -1,6 +1,6 @@
 {
-  "name": "Sumaiyyah Fast Food POS",
-  "description": "Full-stack digital commerce and operations platform for Sumaiyyah Fast Food — customer online ordering, real-time kitchen tracking, POS terminal, menu & stock management.",
+  "name": "Sumaiyyah Fast Food",
+  "description": "Authentic Swahili street food & casual dining restaurant on Bibi Titi Mohammed Street, Posta, Dar es Salaam — pilau, mishkaki, chips zege, nyama choma, bhajia, fresh juices, dine-in, takeaway, and corporate delivery.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

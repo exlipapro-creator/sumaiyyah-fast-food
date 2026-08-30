@@ -4,8 +4,11 @@ import { getSessionFromRequest } from "./src/lib/auth-edge";
 // Public, unauthenticated surfaces: customer homepage, ordering, menu, tracking, etc.
 const PUBLIC_PATHS = [
   "/login",
+  "/forbidden",
   "/api/auth/login",
   "/api/auth/logout",
+  "/api/auth/me",
+  "/api/health",
   "/order",
   "/deals",
   "/cart",
@@ -13,6 +16,9 @@ const PUBLIC_PATHS = [
   "/track-order",
   "/favorites",
   "/account",
+  "/corporate",
+  "/advertise",
+  "/delivery",
   "/api/public",
   "/api/customer",
   "/api/uploads"
@@ -33,13 +39,17 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow public paths
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+  // Allow static assets, Next internal files, and files with extensions
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    pathname.includes(".")
+  ) {
     return NextResponse.next();
   }
 
-  // Allow static assets
-  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) {
+  // Allow public paths
+  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
@@ -70,5 +80,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|json|txt)$).*)",
+  ],
 };

@@ -165,7 +165,7 @@ export default function CustomerNavbar() {
           <div className="pt-3 mt-3 border-t border-slate-100 flex flex-col gap-2 text-xs text-slate-500 px-2">
             <div className="flex items-center justify-between">
               <a
-                href="https://wa.me/255700000000"
+                href="https://wa.me/255784428877"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-1.5 text-emerald-600 font-semibold hover:underline"

@@ -10,8 +10,8 @@ import { CartProvider } from "@/context/CartContext";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Eneo la Uwasilishaji (Delivery Coverage Map) | Chakula Kitamu Dar",
-  description: "Uwasilishaji wa chakula moto, safi na kitamu popote ulipo Kariakoo, Posta, Upanga, Ilala, Magomeni, Kisutu na maeneo ya City Center Dar es Salaam.",
+  title: "Eneo la Uwasilishaji (Delivery Coverage Map) | Sumaiyyah Fast Food",
+  description: "Uwasilishaji wa chakula moto cha Kiswahili popote ulipo Posta, Upanga, Kariakoo, Ilala, Kisutu na maeneo ya City Center Dar es Salaam kutoka Sumaiyyah Fast Food Bibi Titi Mohammed Street.",
 };
 
 export default function DeliveryPage() {
@@ -39,23 +39,24 @@ export default function DeliveryPage() {
             </Link>
           </div>
 
-          {/* Hero Banner for Delivery */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-8 shadow-xs relative overflow-hidden">
+          {/* Main Delivery Zones Header Banner */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs relative overflow-hidden">
             <div className="max-w-2xl space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0062C3] bg-[#EBF4FF] px-2.5 py-1 rounded-md inline-block">
-                City Center Food Express
-              </span>
-              <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                Chakula Kitamu, Bei Chee Mlangoni Pako.
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0062C3]/10 text-[#0062C3] text-xs font-bold uppercase tracking-wider">
+                <Bike className="w-3.5 h-3.5" />
+                <span>Dar es Salaam Coverage & Dispatch Zones</span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif">
+                Chakula Moto & Safi Mlangoni Pako
               </h1>
               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                Mlo safi ulioandaliwa kwa ubora na viungo halisi, kinakufikia popote ulipo around city center: Kariakoo, Posta, Upanga, Ilala, Magomeni na viunga vyake.
+                Uwasilishaji wa haraka kutoka mgahawa wetu (Bibi Titi Mohammed Street, Posta) kuelekea Posta, Upanga, Kariakoo, Ilala, Magomeni, Kisutu na viunga vya jiji ndani ya dakika 10–30.
               </p>
             </div>
           </div>
 
           {/* Interactive Delivery Map Component */}
-          <DeliveryRadiusMap showTitle={true} />
+          <DeliveryRadiusMap showTitle={false} />
 
           {/* How Our City Delivery Works */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">

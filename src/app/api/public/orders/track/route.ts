@@ -73,9 +73,9 @@ export async function GET(req: NextRequest) {
 
     const settings = db.prepare("SELECT name, phone, whatsapp, address, opening_hours FROM restaurant_settings WHERE id = 1").get() || {
       name: "Sumaiyyah Fast Food",
-      phone: "+255 700 000 000",
-      whatsapp: "255700000000",
-      address: "Kariakoo, Dar es Salaam, Tanzania",
+      phone: "+255 784 428 877",
+      whatsapp: "255784428877",
+      address: "Bibi Titi Mohammed Street, Posta, Dar es Salaam, Tanzania",
     };
 
     const enrichedOrder = {

@@ -244,7 +244,7 @@ export default function DeliveryRadiusMap({
               Live Delivery Radius & Dispatch Zones
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-              Our central kitchen at Kariakoo / Msimbazi prepares and delivers hot, sealed meals across City Center, Posta, Upanga, Ilala, and surrounding corridors in <span className="font-semibold text-slate-800">10–30 minutes</span>.
+              Our central restaurant at Bibi Titi Mohammed Street, Posta prepares and delivers hot, fresh Swahili street food across Posta, Upanga, Kariakoo, Ilala, and surrounding corridors in <span className="font-semibold text-slate-800">10–30 minutes</span>.
             </p>
           </div>
 
@@ -354,10 +354,10 @@ export default function DeliveryRadiusMap({
             </div>
             <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400"></span> Kitchen Hub
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span> Jiko Kuu (Hub)
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Active Corridor
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span> Active (TZS 2,500)
               </span>
             </div>
           </div>
@@ -499,7 +499,7 @@ export default function DeliveryRadiusMap({
                 JIKO KUU (Hub)
               </text>
 
-              {/* Destination Zone Pins */}
+              {/* Destination Zone Pins with Enlarged Touch Hit Targets */}
               {DELIVERY_ZONES.map((zone) => {
                 const isSelected = zone.id === selectedZoneId;
                 const isTierMatched = activeTier === "all" || zone.tier === activeTier;
@@ -509,30 +509,37 @@ export default function DeliveryRadiusMap({
                     transform={`translate(${zone.coordinates.x}, ${zone.coordinates.y})`}
                     className="cursor-pointer group"
                     onClick={() => handleSelectZone(zone)}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      handleSelectZone(zone);
+                    }}
                   >
+                    {/* Generous invisible touch circle hit area for mobile */}
+                    <circle r="12" fill="transparent" className="cursor-pointer" />
+
                     {/* Pulsing ring for selected pin */}
                     {isSelected && (
-                      <circle r="6" fill="#10B981" opacity="0.45" className="animate-ping" />
+                      <circle r="7" fill="#10B981" opacity="0.45" className="animate-ping" />
                     )}
 
                     {/* Node Dot */}
                     <circle
-                      r={isSelected ? 4 : isTierMatched ? 3 : 2}
+                      r={isSelected ? 4.5 : isTierMatched ? 3.2 : 2.2}
                       fill={isSelected ? "#10B981" : isTierMatched ? "#38BDF8" : "#475569"}
                       stroke="#FFFFFF"
-                      strokeWidth={isSelected ? 1.2 : 0.6}
+                      strokeWidth={isSelected ? 1.4 : 0.7}
                       className="transition-all duration-200 group-hover:scale-125"
                     />
 
                     {/* Zone Title Label */}
                     <text
                       x="0"
-                      y={zone.coordinates.y > 60 ? -5 : 7}
+                      y={zone.coordinates.y > 60 ? -5.5 : 7.5}
                       fill={isSelected ? "#34D399" : isTierMatched ? "#F1F5F9" : "#64748B"}
-                      fontSize={isSelected ? "3.2" : "2.6"}
+                      fontSize={isSelected ? "3.4" : "2.6"}
                       fontWeight={isSelected ? "bold" : "600"}
                       textAnchor="middle"
-                      className="transition-all duration-200 filter drop-shadow-sm"
+                      className="transition-all duration-200 filter drop-shadow-sm select-none"
                     >
                       {zone.name.split("/")[0].split("&")[0].trim()}
                     </text>
@@ -540,12 +547,6 @@ export default function DeliveryRadiusMap({
                 );
               })}
             </svg>
-
-            {/* Click-to-Explore tooltip overlay */}
-            <div className="absolute bottom-2.5 left-2.5 bg-slate-950/85 backdrop-blur-xs border border-slate-800 px-3 py-1.5 rounded-lg text-[11px] text-slate-300 flex items-center gap-2 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Click any area node on the radar map to view direct delivery specifications</span>
-            </div>
           </div>
 
           {/* Quick Zone Navigation Strip */}
@@ -624,7 +625,7 @@ export default function DeliveryRadiusMap({
                   ~{selectedZone.distanceKm} km
                 </div>
                 <div className="text-[10px] text-slate-500">
-                  From Msimbazi Kitchen
+                  From Bibi Titi Mohammed St, Posta
                 </div>
               </div>
             </div>

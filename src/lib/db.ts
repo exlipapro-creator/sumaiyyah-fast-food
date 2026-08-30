@@ -136,10 +136,10 @@ function initSchema(db: Database.Database) {
       id INTEGER PRIMARY KEY DEFAULT 1,
       name TEXT NOT NULL DEFAULT 'Sumaiyyah Fast Food',
       tagline TEXT NOT NULL DEFAULT 'Fresh, Hearty Fast Food & Char-Grill, Hot to Your Door',
-      phone TEXT NOT NULL DEFAULT '+255 700 000 000',
-      whatsapp TEXT NOT NULL DEFAULT '255700000000',
-      address TEXT NOT NULL DEFAULT 'Kariakoo, Dar es Salaam, Tanzania',
-      opening_hours TEXT NOT NULL DEFAULT 'Mon–Sun: 8:00 AM – 11:00 PM',
+      phone TEXT NOT NULL DEFAULT '+255 784 428 877',
+      whatsapp TEXT NOT NULL DEFAULT '255784428877',
+      address TEXT NOT NULL DEFAULT 'Bibi Titi Mohammed Street, Posta, Dar es Salaam, Tanzania',
+      opening_hours TEXT NOT NULL DEFAULT 'Mon–Sun: 7:00 AM – 11:00 PM',
       delivery_enabled INTEGER NOT NULL DEFAULT 1,
       delivery_fee_tsh INTEGER NOT NULL DEFAULT 2500,
       min_order_tsh INTEGER NOT NULL DEFAULT 5000,
@@ -595,7 +595,16 @@ function seedSettingsAndPromos(db: Database.Database) {
   if (settingsCount.n === 0) {
     db.prepare(`
       INSERT INTO restaurant_settings (id, name, tagline, phone, whatsapp, address, opening_hours, delivery_enabled, delivery_fee_tsh, min_order_tsh, promotions_enabled, adsense_enabled, direct_ads_enabled)
-      VALUES (1, 'Sumaiyyah Fast Food', 'Fresh, Hearty Fast Food & Char-Grill, Hot to Your Door', '+255 700 000 000', '255700000000', 'Kariakoo, Dar es Salaam, Tanzania', 'Mon–Sun: 8:00 AM – 11:00 PM', 1, 2500, 5000, 0, 0, 1)
+      VALUES (1, 'Sumaiyyah Fast Food', 'Authentic Swahili Street Food, Char-Grill & Fresh Juices', '+255 784 428 877', '255784428877', 'Bibi Titi Mohammed Street, Posta, Dar es Salaam, Tanzania', 'Mon–Sun: 7:00 AM – 11:00 PM', 1, 2500, 5000, 0, 0, 1)
+    `).run();
+  } else {
+    db.prepare(`
+      UPDATE restaurant_settings
+      SET address = 'Bibi Titi Mohammed Street, Posta, Dar es Salaam, Tanzania',
+          phone = '+255 784 428 877',
+          whatsapp = '255784428877',
+          opening_hours = 'Mon–Sun: 7:00 AM – 11:00 PM'
+      WHERE id = 1
     `).run();
   }
 
@@ -658,217 +667,9 @@ function seedAdPlacements(db: Database.Database) {
 }
 
 function enrichMenuItems(db: Database.Database) {
-  // Update existing menu items with rich descriptions, dietary tags, customization variants and addons
+  // Update any missing item metadata with rich descriptions and customization variants
   const items = db.prepare("SELECT id, name FROM menu_items WHERE description IS NULL OR description = ''").all() as { id: number; name: string }[];
   if (items.length === 0) return;
-
-  const metadataMap: Record<string, {
-    description: string;
-    is_featured: number;
-    is_deal: number;
-    prep_time_min: number;
-    calories: number;
-    spiciness: string;
-    dietary_tags: string[];
-    options: {
-      variants?: { name: string; price_diff: number }[];
-      addons?: { name: string; price: number }[];
-    };
-  }> = {
-    "Classic Burger": {
-      description: "Char-grilled 100% prime beef patty, melted cheddar, crisp lettuce, ripe tomatoes, and signature house burger relish on a toasted brioche bun.",
-      is_featured: 1,
-      is_deal: 0,
-      prep_time_min: 12,
-      calories: 580,
-      spiciness: "Mild",
-      dietary_tags: ["Halal", "Popular", "Signature"],
-      options: {
-        variants: [
-          { name: "Single Patty (Regular)", price_diff: 0 },
-          { name: "Double Patty (+TZS 3,500)", price_diff: 3500 },
-        ],
-        addons: [
-          { name: "Extra Melted Cheddar", price: 1500 },
-          { name: "Crispy Beef Bacon", price: 2000 },
-          { name: "Fried Farm Egg", price: 1000 },
-          { name: "Extra House Sauce", price: 1000 },
-          { name: "Pickled Jalapeños", price: 1000 },
-        ],
-      },
-    },
-    "Spicy Chicken Burger": {
-      description: "Buttermilk marinated crispy chicken breast dunked in Swahili chili glaze, topped with tangy red cabbage slaw and chipotle mayo.",
-      is_featured: 1,
-      is_deal: 0,
-      prep_time_min: 15,
-      calories: 620,
-      spiciness: "Spicy",
-      dietary_tags: ["Halal", "Hot & Spicy", "Chef Pick"],
-      options: {
-        variants: [
-          { name: "Crispy Fried Chicken", price_diff: 0 },
-          { name: "Flame Grilled Chicken", price_diff: 500 },
-        ],
-        addons: [
-          { name: "Extra Chili Glaze", price: 1000 },
-          { name: "Pepper Jack Cheese", price: 1500 },
-          { name: "Pickled Jalapeños", price: 1000 },
-          { name: "Extra Slaw", price: 1000 },
-        ],
-      },
-    },
-    "Double Beef Burger": {
-      description: "Two 150g beef patties smashed with caramelized onions, double cheddar, pickles, and smoky barbecue aioli on a glossy sesame bun.",
-      is_featured: 1,
-      is_deal: 0,
-      prep_time_min: 14,
-      calories: 840,
-      spiciness: "Medium",
-      dietary_tags: ["Halal", "Heavyweight", "Best Seller"],
-      options: {
-        variants: [
-          { name: "Double Beef (Standard)", price_diff: 0 },
-          { name: "Triple Beef Monster (+TZS 4,500)", price_diff: 4500 },
-        ],
-        addons: [
-          { name: "Extra Melted Cheddar", price: 1500 },
-          { name: "Fried Farm Egg", price: 1000 },
-          { name: "Caramelized Onions", price: 1000 },
-          { name: "Smoky BBQ Sauce", price: 1000 },
-        ],
-      },
-    },
-    "French Fries": {
-      description: "Crisp hand-cut Tanzanian potatoes tossed in rosemary sea salt and paprika seasoning.",
-      is_featured: 0,
-      is_deal: 0,
-      prep_time_min: 8,
-      calories: 340,
-      spiciness: "Mild",
-      dietary_tags: ["Vegetarian", "Vegan", "Gluten-Free"],
-      options: {
-        variants: [
-          { name: "Regular Portion", price_diff: 0 },
-          { name: "Large / Jumbo (+TZS 2,000)", price_diff: 2000 },
-        ],
-        addons: [
-          { name: "Loaded Cheese Sauce", price: 1500 },
-          { name: "Pili Pili Seasoning", price: 500 },
-          { name: "Garlic Mayo Dip", price: 1000 },
-        ],
-      },
-    },
-    "Coleslaw": {
-      description: "Freshly shredded green & purple cabbage, crisp carrots, and raisins folded in creamy tangy house dressing.",
-      is_featured: 0,
-      is_deal: 0,
-      prep_time_min: 5,
-      calories: 180,
-      spiciness: "Mild",
-      dietary_tags: ["Vegetarian", "Healthy"],
-      options: {
-        addons: [
-          { name: "Extra Dressing", price: 500 },
-        ],
-      },
-    },
-    "Onion Rings": {
-      description: "Thick-cut sweet onion slices double-dipped in seasoned batter and fried till golden and shatteringly crunchy.",
-      is_featured: 0,
-      is_deal: 0,
-      prep_time_min: 9,
-      calories: 380,
-      spiciness: "Mild",
-      dietary_tags: ["Vegetarian", "Crispy"],
-      options: {
-        addons: [
-          { name: "Sweet Chili Sauce", price: 1000 },
-          { name: "Garlic Herb Dip", price: 1000 },
-        ],
-      },
-    },
-    "Coca-Cola": {
-      description: "Chilled classic Coca-Cola served ice-cold with fresh lime slice upon request.",
-      is_featured: 0,
-      is_deal: 0,
-      prep_time_min: 2,
-      calories: 140,
-      spiciness: "Mild",
-      dietary_tags: ["Refreshing"],
-      options: {
-        variants: [
-          { name: "Can 330ml", price_diff: 0 },
-          { name: "Bottle 500ml (+TZS 500)", price_diff: 500 },
-        ],
-      },
-    },
-    "Mango Juice": {
-      description: "Freshly blended ripe coastal mango nectar with a hint of passion and crushed ice.",
-      is_featured: 1,
-      is_deal: 0,
-      prep_time_min: 4,
-      calories: 190,
-      spiciness: "Mild",
-      dietary_tags: ["100% Fresh", "No Added Sugar", "Vegetarian"],
-      options: {
-        variants: [
-          { name: "Standard 400ml", price_diff: 0 },
-          { name: "Large 600ml (+TZS 1,500)", price_diff: 1500 },
-        ],
-      },
-    },
-    "Water": {
-      description: "Pure natural spring mineral water, purified and chilled.",
-      is_featured: 0,
-      is_deal: 0,
-      prep_time_min: 1,
-      calories: 0,
-      spiciness: "Mild",
-      dietary_tags: ["Zero Calorie"],
-      options: {},
-    },
-    "Burger + Fries Combo": {
-      description: "Classic Burger paired with golden crispy fries and an ice-cold soft drink of your choice.",
-      is_featured: 1,
-      is_deal: 1,
-      prep_time_min: 14,
-      calories: 920,
-      spiciness: "Mild",
-      dietary_tags: ["Halal", "Value Combo", "Best Deal"],
-      options: {
-        variants: [
-          { name: "Classic Beef Combo", price_diff: 0 },
-          { name: "Spicy Chicken Combo (+TZS 1,500)", price_diff: 1500 },
-          { name: "Double Beef Combo (+TZS 3,500)", price_diff: 3500 },
-        ],
-        addons: [
-          { name: "Upgrade to Large Fries", price: 1500 },
-          { name: "Extra Cheese on Burger", price: 1500 },
-          { name: "Add Coleslaw Side", price: 2000 },
-        ],
-      },
-    },
-    "Family Meal Deal": {
-      description: "Huge feast: 2 Classic Burgers, 2 Crispy Chicken Burgers, 3 Large Fries, 4 Soft Drinks, and a jumbo tub of coleslaw.",
-      is_featured: 1,
-      is_deal: 1,
-      prep_time_min: 20,
-      calories: 2400,
-      spiciness: "Medium",
-      dietary_tags: ["Halal", "Feast for 4-5", "Mega Savings"],
-      options: {
-        variants: [
-          { name: "Standard Family Box (4 Burgers + 3 Fries + 4 Drinks)", price_diff: 0 },
-          { name: "Deluxe Feast (+ Double Patties & Extra Wings) (+TZS 12,000)", price_diff: 12000 },
-        ],
-        addons: [
-          { name: "Add Onion Rings Platter", price: 3500 },
-          { name: "Add 4 Fresh Juices Upgrade", price: 4000 },
-        ],
-      },
-    },
-  };
 
   const updateStmt = db.prepare(`
     UPDATE menu_items 
@@ -877,48 +678,46 @@ function enrichMenuItems(db: Database.Database) {
   `);
 
   for (const item of items) {
-    const meta = metadataMap[item.name] || {
-      description: `Fresh, piping hot ${item.name} prepared to order with premium ingredients.`,
-      is_featured: 0,
-      is_deal: 0,
-      prep_time_min: 10,
-      calories: 300,
-      spiciness: "Mild",
-      dietary_tags: ["Halal"],
-      options: {},
-    };
-
     updateStmt.run(
-      meta.description,
-      meta.is_featured,
-      meta.is_deal,
-      meta.prep_time_min,
-      meta.calories,
-      meta.spiciness,
-      JSON.stringify(meta.dietary_tags),
-      JSON.stringify(meta.options),
+      `Chakula safi, moto na kitamu cha ${item.name} kilichoandaliwa kwa viungo vya asili vya pwani.`,
+      0,
+      0,
+      12,
+      450,
+      "Mild",
+      JSON.stringify(["Halal", "Swahili Street Food"]),
+      JSON.stringify({}),
       item.id
     );
   }
 }
 
 function syncSwahiliMenu(db: Database.Database) {
-  // Normalize any previous verbose category names
+  // Ensure restaurant settings & store hours reflect Bibi Titi Mohammed Street, Posta, Dar es Salaam & +255 784 428 877
   try {
     db.exec(`
-      UPDATE categories SET name = 'Milo Mikuu' WHERE name LIKE 'Milo Mikuu%';
-      UPDATE categories SET name = 'Chipsi & Mshikaki' WHERE name LIKE 'Chipsi & Mshikaki%';
-      UPDATE categories SET name = 'Vinywaji Baridi' WHERE name LIKE 'Vinywaji Baridi%';
-      UPDATE categories SET name = 'Juisi & Matunda' WHERE name LIKE 'Juisi & Matunda%';
+      UPDATE restaurant_settings 
+      SET address = 'Bibi Titi Mohammed Street, Posta, Dar es Salaam, Tanzania',
+          phone = '+255 784 428 877',
+          whatsapp = '255784428877',
+          opening_hours = 'Mon–Sun: 7:00 AM – 11:00 PM'
+      WHERE id = 1;
+
+      UPDATE store_settings
+      SET opening_time = '07:00:00',
+          closing_time = '23:00:00',
+          default_fallback_text = 'Sumaiyyah Fast Food — Swahili Street Food, Char-Grill & Fresh Juices, Bibi Titi Mohammed St, Posta'
+      WHERE id = 1;
     `);
   } catch {}
 
-  // Ensure the 4 primary Swahili categories exist with clean, concise names
+  // Ensure all 5 primary Swahili categories exist
   const requiredCategories = [
-    { name: "Milo Mikuu", sort_order: 1 },
-    { name: "Chipsi & Mshikaki", sort_order: 2 },
-    { name: "Vinywaji Baridi", sort_order: 3 },
-    { name: "Juisi & Matunda", sort_order: 4 },
+    { name: "Milo Mikuu & Nyama Choma", sort_order: 1 },
+    { name: "Chipsi, Zege & Mishkaki", sort_order: 2 },
+    { name: "Vitafunwa & Saladi", sort_order: 3 },
+    { name: "Juisi Freshi za Matunda", sort_order: 4 },
+    { name: "Vinywaji Baridi & Maji", sort_order: 5 },
   ];
 
   for (const cat of requiredCategories) {
@@ -932,12 +731,13 @@ function syncSwahiliMenu(db: Database.Database) {
 
   const catMilo = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[0].name) as { id: number }).id;
   const catChips = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[1].name) as { id: number }).id;
-  const catDrinks = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[2].name) as { id: number }).id;
+  const catVitafunwa = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[2].name) as { id: number }).id;
   const catJuice = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[3].name) as { id: number }).id;
+  const catDrinks = (db.prepare("SELECT id FROM categories WHERE name = ?").get(requiredCategories[4].name) as { id: number }).id;
 
-  // The 23 authentic restaurant menu items
+  // The authentic restaurant menu items
   const menuItemsData = [
-    // 1-8: Milo Mikuu
+    // 1. Milo Mikuu & Nyama Choma
     {
       category_id: catMilo,
       name: "Wali Nyama",
@@ -949,7 +749,7 @@ function syncSwahiliMenu(db: Database.Database) {
       prep_time_min: 12,
       calories: 680,
       spiciness: "Mild",
-      dietary_tags: ["Halal", "Mlo Kamili", "Pendwa la Wengi"],
+      dietary_tags: ["Halal", "Mlo Kamili", "Pendwa"],
       options: {
         variants: [
           { name: "Sahani ya Kawaida", price_diff: 0 },
@@ -1016,7 +816,7 @@ function syncSwahiliMenu(db: Database.Database) {
       name: "Pilau Kuku",
       price_tsh: 4000,
       sort_order: 4,
-      description: "Pilau moto yenye viungo kamili vya pwani, ikisindikizwa na kuku wa kukaanga/rosto, maharage, mbogamboga na kachumbari.",
+      description: "Pilau moto yenye viungo kamili vya pwani, ikisindikizwa na kuku wa kukaanga/rosti, maharage, mbogamboga na kachumbari.",
       is_featured: 1,
       is_deal: 0,
       prep_time_min: 15,
@@ -1128,7 +928,7 @@ function syncSwahiliMenu(db: Database.Database) {
       },
     },
 
-    // 9-14 & 19: Chips & Grill
+    // 2. Chipsi, Zege & Mishkaki
     {
       category_id: catChips,
       name: "Chips plain",
@@ -1257,11 +1057,167 @@ function syncSwahiliMenu(db: Database.Database) {
         ],
       },
     },
+
+    // 3. Vitafunwa & Saladi
+    {
+      category_id: catVitafunwa,
+      name: "Potato Bhajia",
+      price_tsh: 1500,
+      sort_order: 1,
+      description: "Bhajia moto za viazi vitamu zilizochanganywa na viungo asilia vya Kiswahili, tangawizi na kukaangwa crispy zikiambatana na chutney ya ukwaju.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 8,
+      calories: 320,
+      spiciness: "Medium",
+      dietary_tags: ["Vegetarian", "Crispy", "Swahili Street Food"],
+      options: {
+        variants: [
+          { name: "Portion ya Kawaida", price_diff: 0 },
+          { name: "Portion Kubwa (+TZS 1,000)", price_diff: 1000 },
+        ],
+        addons: [
+          { name: "Chutney ya Ukwaju ya Ziada", price: 500 },
+          { name: "Pilipili Kali", price: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catVitafunwa,
+      name: "Maandazi Fresh",
+      price_tsh: 500,
+      sort_order: 2,
+      description: "Maandazi laini, moto ya nazi na iliki yaliyookwa kila asubuhi na jioni kwa ladha halisi ya Kiswahili.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 2,
+      calories: 180,
+      spiciness: "Mild",
+      dietary_tags: ["Vegetarian", "Fresh Baked", "Kitafunwa"],
+      options: {
+        variants: [
+          { name: "Andazi 1", price_diff: 0 },
+          { name: "Seti ya Maandazi 4 (+TZS 1,500)", price_diff: 1500 },
+        ],
+      },
+    },
+    {
+      category_id: catVitafunwa,
+      name: "Kachumbari Maalum & Saladi",
+      price_tsh: 1000,
+      sort_order: 3,
+      description: "Saladi freshi ya nyanya, vitunguu maji, matango, pilipili hoho, ndimu na chumvi ya asili.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 5,
+      calories: 75,
+      spiciness: "Mild",
+      dietary_tags: ["Fresh Salad", "Vegetarian", "Healthy"],
+      options: {
+        addons: [
+          { name: "Pilipili ya Kuwasha", price: 0 },
+          { name: "Ndimu ya Ziada", price: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catVitafunwa,
+      name: "Avocado Salad ya Kiswahili",
+      price_tsh: 1500,
+      sort_order: 4,
+      description: "Saladi safi yenye vipande vya parachichi bivu, nyanya, tango, vitunguu na sosi laini ya ndimu na mafuta ya mizeituni.",
+      is_featured: 0,
+      is_deal: 0,
+      prep_time_min: 6,
+      calories: 190,
+      spiciness: "Mild",
+      dietary_tags: ["Parachichi", "Healthy", "Vegetarian"],
+      options: {},
+    },
+
+    // 4. Juisi Freshi za Matunda
+    {
+      category_id: catJuice,
+      name: "Juisi ya Ukwaju (Tamarind Juice)",
+      price_tsh: 1000,
+      sort_order: 1,
+      description: "Juisi asilia ya ukwaju uliotengenezwa kwa viungo vya asili (iliki na tangawizi kidogo), iliyopozwa vizuri kuburudisha kiu.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 2,
+      calories: 110,
+      spiciness: "Mild",
+      dietary_tags: ["100% Asili", "Ukwaju Halisi", "Kuburudisha"],
+      options: {
+        variants: [
+          { name: "Glass 400ml", price_diff: 0 },
+          { name: "Chupa ya Takeaway 500ml (+TZS 500)", price_diff: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catJuice,
+      name: "Juisi ya Embe (Fresh Mango Juice)",
+      price_tsh: 1000,
+      sort_order: 2,
+      description: "Juisi freshi ya embe mbivu za pwani iliyosagwa vizuri ikiwa nzito, tamu na yenye virutubisho bila kilevi chochote.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 3,
+      calories: 140,
+      spiciness: "Mild",
+      dietary_tags: ["100% Asili", "Embe Pwani", "Bila Kilevi"],
+      options: {
+        variants: [
+          { name: "Glass 400ml", price_diff: 0 },
+          { name: "Chupa 500ml (+TZS 500)", price_diff: 500 },
+        ],
+      },
+    },
+    {
+      category_id: catJuice,
+      name: "Fresh fruits smoothy Juice",
+      price_tsh: 1000,
+      sort_order: 3,
+      description: "Juisi freshi ya asili ya matunda mchanganyiko (embe, parachichi, nanasi, passion) iliyotengenezwa bila maji ya ziada.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 4,
+      calories: 160,
+      spiciness: "Mild",
+      dietary_tags: ["100% Asili", "Matunda Freshi", "Bila Sukari"],
+      options: {
+        variants: [
+          { name: "Mchanganyiko (Embe, Parachichi, Nanasi)", price_diff: 0 },
+          { name: "Embe & Passion", price_diff: 0 },
+          { name: "Parachichi Safi", price_diff: 0 },
+        ],
+      },
+    },
+    {
+      category_id: catJuice,
+      name: "special fruits smoothy juice",
+      price_tsh: 1500,
+      sort_order: 4,
+      description: "Juisi maalum yenye nguvu: Matunda freshi, asali mbichi ya nyuki, tende, maziwa freshi na karanga.",
+      is_featured: 1,
+      is_deal: 0,
+      prep_time_min: 5,
+      calories: 280,
+      spiciness: "Mild",
+      dietary_tags: ["Special Energy", "Virutubisho", "Pendwa la Ofisi"],
+      options: {
+        variants: [
+          { name: "Special Mix Kamili", price_diff: 0 },
+          { name: "Special Bila Maziwa", price_diff: 0 },
+        ],
+      },
+    },
     {
       category_id: catJuice,
       name: "Ndizi",
       price_tsh: 500,
-      sort_order: 3,
+      sort_order: 5,
       description: "Ndizi mbivu tamu ya asili au ndizi ya kukaanga/kuchoma ya kuongeza nguvu.",
       is_featured: 0,
       is_deal: 0,
@@ -1278,7 +1234,7 @@ function syncSwahiliMenu(db: Database.Database) {
       },
     },
 
-    // 15-18 & 22-23: Vinywaji Baridi
+    // 5. Vinywaji Baridi & Maji
     {
       category_id: catDrinks,
       name: "Maji 1l.",
@@ -1402,47 +1358,6 @@ function syncSwahiliMenu(db: Database.Database) {
         ],
       },
     },
-
-    // 20-21: Juisi Freshi & Smoothies
-    {
-      category_id: catJuice,
-      name: "Fresh fruits smoothy Juice",
-      price_tsh: 1000,
-      sort_order: 1,
-      description: "Juisi freshi ya asili ya matunda mchanganyiko (embe, parachichi, nanasi, passion) iliyotengenezwa bila maji ya ziada.",
-      is_featured: 1,
-      is_deal: 0,
-      prep_time_min: 4,
-      calories: 160,
-      spiciness: "Mild",
-      dietary_tags: ["100% Asili", "Matunda Freshi", "Bila Sukari"],
-      options: {
-        variants: [
-          { name: "Mchanganyiko (Embe, Parachichi, Nanasi)", price_diff: 0 },
-          { name: "Embe & Passion", price_diff: 0 },
-          { name: "Parachichi Safi", price_diff: 0 },
-        ],
-      },
-    },
-    {
-      category_id: catJuice,
-      name: "special fruits smoothy juice",
-      price_tsh: 1500,
-      sort_order: 2,
-      description: "Juisi maalum yenye nguvu: Matunda freshi, asali mbichi ya nyuki, tende, maziwa freshi na karanga.",
-      is_featured: 1,
-      is_deal: 0,
-      prep_time_min: 5,
-      calories: 280,
-      spiciness: "Mild",
-      dietary_tags: ["Special Energy", "Virutubisho", "Pendwa la Ofisi"],
-      options: {
-        variants: [
-          { name: "Special Mix Kamili", price_diff: 0 },
-          { name: "Special Bila Maziwa", price_diff: 0 },
-        ],
-      },
-    },
   ];
 
   // Insert or update each menu item
@@ -1458,7 +1373,7 @@ function syncSwahiliMenu(db: Database.Database) {
     UPDATE menu_items SET
       category_id = ?, price_tsh = ?, sort_order = ?,
       description = ?, is_featured = ?, is_deal = ?, prep_time_min = ?, calories = ?,
-      spiciness = ?, dietary_tags = ?, options_json = ?
+      spiciness = ?, dietary_tags = ?, options_json = ?, active = 1, deleted = 0
     WHERE id = ?
   `);
 
@@ -1497,11 +1412,30 @@ function syncSwahiliMenu(db: Database.Database) {
     }
   }
 
-  // Deactivate old placeholder burger items if they still exist so user only sees their real 23 items
-  const legacyNames = ["Classic Burger", "Spicy Chicken Burger", "Double Beef Burger", "French Fries", "Coleslaw", "Onion Rings", "Burger + Fries Combo", "Family Meal Deal", "Mango Juice", "Water", "Coca-Cola"];
-  for (const legacy of legacyNames) {
-    db.prepare("UPDATE menu_items SET active = 0, deleted = 1 WHERE name = ?").run(legacy);
-  }
+  // Deactivate all foreign/western fast food items (burgers, pizzas, hotdogs, etc.)
+  db.exec(`
+    UPDATE menu_items 
+    SET active = 0, deleted = 1 
+    WHERE name LIKE '%Burger%' 
+       OR name LIKE '%Pizza%' 
+       OR name LIKE '%French Fries%' 
+       OR name LIKE '%Coleslaw%' 
+       OR name LIKE '%Onion Rings%' 
+       OR name LIKE '%Meal Deal%';
+
+    UPDATE store_settings 
+    SET opening_time = '07:00:00', closing_time = '23:00:00' 
+    WHERE id = 1;
+
+    UPDATE restaurant_settings 
+    SET name = 'Sumaiyyah Fast Food',
+        tagline = 'Authentic Swahili Street Food & Fresh Juices',
+        address = 'Bibi Titi Mohammed Street, Posta, Dar es Salaam, Tanzania',
+        phone = '+255 784 428 877',
+        whatsapp = '255784428877',
+        opening_hours = 'Daily: 7:00 AM – 11:00 PM'
+    WHERE id = 1;
+  `);
 }
 
 function seed(db: Database.Database) {
@@ -1885,7 +1819,7 @@ function seedStoreHoursAndAnnouncements(db: Database.Database) {
   if (!settingsRow) {
     db.prepare(`
       INSERT INTO store_settings (id, is_manual_override, manual_status, opening_time, closing_time, timezone, default_fallback_text)
-      VALUES (1, 0, 'OPEN', '08:00:00', '23:00:00', 'Africa/Dar_es_Salaam', 'Top Kitchen Live — Fresh Meals & Juices Delivered Daily across Dar es Salaam')
+      VALUES (1, 0, 'OPEN', '07:00:00', '23:00:00', 'Africa/Dar_es_Salaam', 'Top Kitchen Live — Fresh Meals & Juices Delivered Daily across Dar es Salaam')
     `).run();
   }
 
@@ -1895,25 +1829,25 @@ function seedStoreHoursAndAnnouncements(db: Database.Database) {
     const initialAnnouncements = [
       {
         id: "ann_1_grill_live",
-        text: "TOP KITCHEN LIVE: Grill & Tandoori Wazi Sasa",
+        text: "TOP KITCHEN LIVE: Authentic Swahili Street Food & Fresh Fruit Juices",
         highlight: "Moto & Safi",
         priority: 1,
       },
       {
         id: "ann_2_express_delivery",
-        text: "Express Bike Delivery: Kariakoo, Posta, Upanga, Ilala, Kisutu & Magomeni",
+        text: "Express Delivery: Posta, Upanga, Kariakoo, Ilala & Kisutu",
         highlight: "10-25 Mins",
         priority: 2,
       },
       {
         id: "ann_3_operating_hours",
-        text: "Jiko Operating Hours: 8:00 AM – 11:00 PM Kila Siku",
-        highlight: "Dar es Salaam CBD",
+        text: "Operating Hours: 7:00 AM – 11:00 PM Daily",
+        highlight: "Bibi Titi St, Posta",
         priority: 3,
       },
       {
         id: "ann_4_corporate_catering",
-        text: "Corporate Office Catering & Scheduled Lunch Subsidy Accounts",
+        text: "Corporate Office Catering & Scheduled Group Lunch Orders",
         highlight: "B2B Portal Active",
         priority: 4,
       },
@@ -1926,7 +1860,7 @@ function seedStoreHoursAndAnnouncements(db: Database.Database) {
       {
         id: "ann_6_whatsapp_hotline",
         text: "Direct Kitchen WhatsApp & Fast Rider Dispatch Line",
-        highlight: "+255 700 000 000",
+        highlight: "+255 784 428 877",
         priority: 6,
       },
     ];

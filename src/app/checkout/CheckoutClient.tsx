@@ -169,6 +169,19 @@ export default function CheckoutClient({ settings }: CheckoutClientProps) {
         });
       } catch (err) {}
 
+      // Save last order info for Live Track hub
+      try {
+        localStorage.setItem(
+          "sumaiyyah_last_order",
+          JSON.stringify({
+            receipt_number: data.receipt_number,
+            placed_at: new Date().toISOString(),
+            total_tsh: grandTotal,
+            active: true,
+          })
+        );
+      } catch (e) {}
+
       // Clear local cart
       clearCart();
 
@@ -201,7 +214,7 @@ export default function CheckoutClient({ settings }: CheckoutClientProps) {
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-serif">Checkout & Delivery</h1>
             <p className="text-slate-500 text-xs sm:text-sm">
-              Complete your details below to place your order with our Kariakoo kitchen.
+              Complete your details below to place your order with our Bibi Titi Mohammed Street kitchen in Posta.
             </p>
           </div>
 
@@ -312,7 +325,7 @@ export default function CheckoutClient({ settings }: CheckoutClientProps) {
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-1.5 text-xs text-slate-600">
                   <div className="font-bold text-slate-900 flex items-center gap-1.5">
                     <Store className="w-4 h-4 text-[#0062C3]" />
-                    <span>Pickup Location: Sumaiyyah Fast Food Kariakoo</span>
+                    <span>Pickup Location: Sumaiyyah Fast Food, Bibi Titi Mohammed Street, Posta</span>
                   </div>
                   <p className="text-slate-500">
                     Your food will be packaged and ready for collection at the counter within approx. 15–20 minutes.

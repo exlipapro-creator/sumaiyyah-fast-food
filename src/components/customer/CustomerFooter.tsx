@@ -43,7 +43,7 @@ export default function CustomerFooter() {
               </div>
             </div>
             <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">
-              Tunakuletea vyakula vitamu vya asili na fast food safi, mishikaki ya kuchoma, biryani, pilau, kuku wa kukaanga, chipsi kavu, na vinywaji baridi popote Dar es Salaam kwa haraka na ubora wa juu.
+              Tunakuletea vyakula asilia vya Kiswahili: pilau ya nyama na kuku, mishkaki, chipsi zege, nyama choma, bhajia za viazi, maandazi freshi, saladi, na juisi asilia za ukwaju na embe moja kwa moja kutoka Bibi Titi Mohammed Street, Posta, Dar es Salaam.
             </p>
             <div className="flex items-center gap-2 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 rounded-xl w-fit font-medium">
               <ShieldCheck className="w-4 h-4 text-amber-400" />
@@ -105,15 +105,15 @@ export default function CustomerFooter() {
               <div className="flex items-start gap-2.5">
                 <Clock className="w-4 h-4 text-[#0062C3] mt-0.5 shrink-0" />
                 <div>
-                  <div className="text-slate-200 font-semibold">Wazi Siku Zote 7 za Wiki</div>
-                  <div className="text-slate-400 text-xs">Saa 2:00 Asubuhi – Saa 5:00 Usiku</div>
+                  <div className="text-slate-200 font-semibold">Wazi Kila Siku (Mon–Sun)</div>
+                  <div className="text-slate-400 text-xs">Saa 1:00 Asubuhi (7:00 AM) – Saa 5:00 Usiku</div>
                 </div>
               </div>
               <div className="flex items-start gap-2.5 pt-1">
                 <Truck className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                 <div>
                   <div className="text-slate-200 font-semibold">Usafirishaji wa Haraka Dar es Salaam</div>
-                  <div className="text-slate-400 text-xs">Kariakoo, Posta, Kinondoni, Sinza, Masaki, Ilala na maeneo yote</div>
+                  <div className="text-slate-400 text-xs">Posta, Upanga, Kariakoo, Kinondoni, Sinza, Masaki, Mikocheni na kote jijini</div>
                 </div>
               </div>
             </div>
@@ -125,17 +125,17 @@ export default function CustomerFooter() {
             <div className="space-y-2.5 text-xs sm:text-sm">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#E5002B] mt-0.5 shrink-0" />
-                <span>Kariakoo, Dar es Salaam, Tanzania</span>
+                <span>Bibi Titi Mohammed Street, Posta, Dar es Salaam, Tanzania</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                <a href="tel:+255700000000" className="hover:text-white transition-colors font-mono">
-                  +255 700 000 000
+                <a href="tel:+255784428877" className="hover:text-white transition-colors font-mono">
+                  +255 784 428 877
                 </a>
               </div>
               <div className="pt-2">
                 <a
-                  href="https://wa.me/255700000000"
+                  href="https://wa.me/255784428877"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-colors"

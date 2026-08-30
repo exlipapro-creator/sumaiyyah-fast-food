@@ -92,11 +92,11 @@ export async function GET() {
     const rawSettings = (db.prepare("SELECT * FROM restaurant_settings WHERE id = 1").get() || {}) as Record<string, unknown>;
     const settings = {
       name: (rawSettings.name as string) || "Sumaiyyah Fast Food",
-      tagline: (rawSettings.tagline as string) || "Fresh, Hearty Fast Food & Char-Grill, Hot to Your Door",
-      phone: (rawSettings.phone as string) || "+255 700 000 000",
-      whatsapp: (rawSettings.whatsapp as string) || "255700000000",
-      address: (rawSettings.address as string) || "Kariakoo, Dar es Salaam, Tanzania",
-      opening_hours: (rawSettings.opening_hours as string) || "Mon–Sun: 8:00 AM – 11:00 PM",
+      tagline: (rawSettings.tagline as string) || "Authentic Swahili Street Food & Fresh Juices",
+      phone: (rawSettings.phone as string) || "+255 784 428 877",
+      whatsapp: (rawSettings.whatsapp as string) || "255784428877",
+      address: (rawSettings.address as string) || "Bibi Titi Mohammed Street, Posta, Dar es Salaam, Tanzania",
+      opening_hours: (rawSettings.opening_hours as string) || "Daily: 7:00 AM – 11:00 PM",
       delivery_enabled: rawSettings.delivery_enabled === 0 ? 0 : 1,
       delivery_fee_tsh: (rawSettings.delivery_fee_tsh as number) || 2500,
       min_order_tsh: (rawSettings.min_order_tsh as number) || 5000,

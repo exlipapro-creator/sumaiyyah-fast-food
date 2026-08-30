@@ -22,7 +22,7 @@ function getCheckoutData() {
   return {
     settings: settings || {
       restaurant_name: "Sumaiyyah Fast Food",
-      phone: "+255700000000",
+      phone: "+255 784 428 877",
       delivery_fee_tsh: 2500,
       min_order_tsh: 5000,
       delivery_available: 1,

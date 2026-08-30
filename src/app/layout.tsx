@@ -10,8 +10,8 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Sumaiyyah Fast Food POS",
-  description: "Point of Sale System for Sumaiyyah Fast Food",
+  title: "Sumaiyyah Fast Food | Bibi Titi Mohammed St, Posta, Dar es Salaam",
+  description: "Authentic Swahili street food & casual dining restaurant on Bibi Titi Mohammed Street, Posta, Dar es Salaam — pilau, mishkaki, chips zege, nyama choma, bhajia, fresh juices, dine-in, takeaway, and corporate delivery.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -345,7 +345,7 @@ export default function TrackOrderClient() {
                   <div>
                     <div className="font-bold text-slate-900 flex items-center gap-1.5">
                       <span>Delivery Corridor:</span>
-                      <span className="text-[#0062C3]">Jiko Kuu (Msimbazi) &rarr; {activeMatchedZone ? activeMatchedZone.name : order.delivery_address}</span>
+                      <span className="text-[#0062C3]">Sumaiyyah (Posta) &rarr; {activeMatchedZone ? activeMatchedZone.name : order.delivery_address}</span>
                     </div>
                     <p className="text-slate-500 text-[11px]">
                       {activeMatchedZone
@@ -414,7 +414,7 @@ export default function TrackOrderClient() {
             {/* Quick WhatsApp Support & Reorder CTAs */}
             <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
               <a
-                href={`https://wa.me/255700000000?text=${encodeURIComponent(`Hello Sumaiyyah Fast Food! I would like to check on my order #${order.receipt_number}`)}`}
+                href={`https://wa.me/255784428877?text=${encodeURIComponent(`Hello Sumaiyyah Fast Food! I would like to check on my order #${order.receipt_number}`)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-colors w-full sm:w-auto justify-center"
